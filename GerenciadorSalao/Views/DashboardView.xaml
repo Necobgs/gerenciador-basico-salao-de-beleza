@@ -1,0 +1,644 @@
+<UserControl x:Class="GerenciadorSalao.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             mc:Ignorable="d" 
+             d:DesignHeight="1200" d:DesignWidth="1100">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="28,20,28,32">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> <!-- 1. Header da Página -->
+                <RowDefinition Height="Auto"/> <!-- 2. Quatro Cards de Métricas -->
+                <RowDefinition Height="Auto"/> <!-- 3. Faturamento (Gráfico) + Clientes Especiais (Top 5) -->
+                <RowDefinition Height="Auto"/> <!-- 4. Agenda do Dia (Tabela) -->
+            </Grid.RowDefinitions>
+
+            <!-- ===================== 1. HEADER DA PÁGINA ===================== -->
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="SEU SALÃO, EM HARMONIA" 
+                               FontSize="11" 
+                               FontWeight="Bold" 
+                               Foreground="{StaticResource BrushSecondary}" 
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="Visão geral" 
+                               FontSize="26" 
+                               FontWeight="Bold" 
+                               Foreground="{StaticResource BrushTextPrimary}"/>
+                    <TextBlock Text="Tudo pronto para mais um dia de beleza e cuidado." 
+                               FontSize="13" 
+                               Foreground="{StaticResource BrushTextSecondary}" 
+                               Margin="0,3,0,0"/>
+                </StackPanel>
+
+                <!-- Ações do Topo: Data e Novo Agendamento -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{StaticResource BrushSurface}"
+                            BorderBrush="{StaticResource BrushBorder}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12,8"
+                            Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DataHojeFormatada}" 
+                                       FontSize="12" 
+                                       FontWeight="Medium" 
+                                       Foreground="{StaticResource BrushTextPrimary}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Command="{Binding NovoAgendamentoCommand}"
+                            Background="{StaticResource BrushPrimary}"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Padding="14,9"
+                            Cursor="Hand">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
+                            <TextBlock Text="Novo agendamento" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===================== 2. QUATRO CARDS DE MÉTRICAS ===================== -->
+            <Grid Grid.Row="1" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Card 1: Faturamento do dia -->
+                <Border Grid.Column="0" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        Padding="16,16" 
+                        Margin="0,0,6,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <TextBlock Text="Faturamento do dia" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="Wallet24" FontSize="17" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding FaturamentoHoje, StringFormat='{}{0:C2}'}" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                   Margin="0,10,0,4"/>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal">
+                            <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="{Binding ComandasFinalizadasHoje}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text=" comandas finalizadas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Card 2: Comandas abertas -->
+                <Border Grid.Column="1" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        Padding="16,16" 
+                        Margin="4,0,4,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <TextBlock Text="Comandas abertas" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="ClipboardTextEdit24" FontSize="17" Foreground="{StaticResource BrushSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding ComandasAbertas, StringFormat='{}{0:D2}'}" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                   Margin="0,10,0,4"/>
+
+                        <TextBlock Grid.Row="2" Text="• Atendimentos em andamento" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Card 3: Agendamentos hoje -->
+                <Border Grid.Column="2" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        Padding="16,16" 
+                        Margin="4,0,4,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <TextBlock Text="Agendamentos hoje" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="17" Foreground="#2E7D32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding AgendamentosHoje, StringFormat='{}{0:D2}'}" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                   Margin="0,10,0,4"/>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal">
+                            <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="{Binding AgendamentosPendentesHoje}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text=" aguardando atendimento" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Card 4: Clientes cadastrados -->
+                <Border Grid.Column="3" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        Padding="16,16" 
+                        Margin="6,0,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0">
+                            <TextBlock Text="Clientes cadastrados" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="#E3F2FD" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="People24" FontSize="17" Foreground="#1565C0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Grid.Row="1" 
+                                   Text="{Binding TotalClientes, StringFormat='{}{0:D2}'}" 
+                                   FontSize="22" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                   Margin="0,10,0,4"/>
+
+                        <TextBlock Grid.Row="2" Text="• Conexões que fazem a diferença" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== 3. FATURAMENTO (GRÁFICO) + CLIENTES ESPECIAIS (TOP 5) ===================== -->
+            <Grid Grid.Row="2" Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.4*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- CARD ESQUERDA: FATURAMENTO ANUAL COM GRÁFICO -->
+                <Border Grid.Column="0" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="22,18" 
+                        Margin="0,0,8,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Título & Filtros -->
+                            <RowDefinition Height="Auto"/> <!-- Valor Acumulado & Legenda -->
+                            <RowDefinition Height="Auto"/> <!-- Gráfico Visual -->
+                            <RowDefinition Height="Auto"/> <!-- Rodapé -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho do Card Faturamento -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Faturamento" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                <TextBlock Text="Uma visão dos resultados do seu salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+
+                            <!-- Filtros (Ano completo e Ano) -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Border Background="{StaticResource BrushBackground}"
+                                        BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,5"
+                                        Margin="0,0,6,0">
+                                    <TextBlock Text="Ano completo ▾" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextPrimary}"/>
+                                </Border>
+                                <Border Background="{StaticResource BrushBackground}"
+                                        BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="10,5">
+                                    <TextBlock Text="2026 ▾" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextPrimary}"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Valor Acumulado e Tag -->
+                        <Grid Grid.Row="1" Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding FaturamentoAcumuladoAno, StringFormat='{}{0:C2}'}" 
+                                           FontSize="24" 
+                                           FontWeight="Bold" 
+                                           Foreground="{StaticResource BrushTextPrimary}" 
+                                           Margin="0,0,10,0"/>
+                                <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
+                                    <TextBlock Text="Acumulado do ano" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{StaticResource BrushPrimary}" Margin="0,0,6,0"/>
+                                <TextBlock Text="Faturamento" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Gráfico de Curva Vetorial Suave com Degradê Rosé -->
+                        <Grid Grid.Row="2" Height="170" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="48"/> <!-- Eixo Y Labels -->
+                                <ColumnDefinition Width="*"/>   <!-- Área da Linha e Grid -->
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Labels do Eixo Y -->
+                            <Grid Grid.Column="0">
+                                <TextBlock Text="3.4 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top"/>
+                                <TextBlock Text="2.55 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,38,0,0"/>
+                                <TextBlock Text="1.7 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,76,0,0"/>
+                                <TextBlock Text="0.85 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,114,0,0"/>
+                                <TextBlock Text="R$ 0" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom"/>
+                            </Grid>
+
+                            <!-- Área do Gráfico -->
+                            <Grid Grid.Column="1">
+                                <!-- Linhas de Guia Horizontais Tracejadas -->
+                                <Canvas>
+                                    <Line X1="0" Y1="8" X2="450" Y2="8" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="45" X2="450" Y2="45" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="82" X2="450" Y2="82" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="120" X2="450" Y2="120" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="150" X2="450" Y2="150" Stroke="{StaticResource BrushBorder}"/>
+                                </Canvas>
+
+                                <!-- Curva e Preenchimento em Degradê Rosé Marsala -->
+                                <Path Stretch="Fill" Margin="4,8,4,18" Stroke="{StaticResource BrushPrimary}" StrokeThickness="3">
+                                    <Path.Data>
+                                        <PathGeometry>
+                                            <PathFigure StartPoint="0,85">
+                                                <PolyBezierSegment Points="80,75 160,60 240,42 320,22 360,10 380,35 400,140 420,142 450,142"/>
+                                            </PathFigure>
+                                        </PathGeometry>
+                                    </Path.Data>
+                                </Path>
+
+                                <!-- Preenchimento Suave sob a Curva -->
+                                <Path Stretch="Fill" Margin="4,8,4,18" Opacity="0.18">
+                                    <Path.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#64423C" Offset="0.0"/>
+                                            <GradientStop Color="#FEE9E6" Offset="1.0"/>
+                                        </LinearGradientBrush>
+                                    </Path.Fill>
+                                    <Path.Data>
+                                        <PathGeometry>
+                                            <PathFigure StartPoint="0,85" IsClosed="True">
+                                                <PolyBezierSegment Points="80,75 160,60 240,42 320,22 360,10 380,35 400,140 420,142 450,142"/>
+                                                <LineSegment Point="450,142"/>
+                                                <LineSegment Point="0,142"/>
+                                            </PathFigure>
+                                        </PathGeometry>
+                                    </Path.Data>
+                                </Path>
+                            </Grid>
+                        </Grid>
+
+                        <!-- Labels dos Meses (Eixo X) -->
+                        <UniformGrid Grid.Row="2" Columns="12" VerticalAlignment="Bottom" Margin="48,0,0,0">
+                            <TextBlock Text="Jan" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Fev" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Mar" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Abr" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Mai" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Jun" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Jul" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Ago" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Set" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Out" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Nov" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Dez" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                        </UniformGrid>
+
+                        <!-- Rodapé do Card Faturamento -->
+                        <Grid Grid.Row="3" Margin="0,10,0,0">
+                            <Border Height="1" Background="{StaticResource BrushBorder}" VerticalAlignment="Top" Margin="0,0,0,10"/>
+                            <TextBlock Text="Considera apenas comandas pagas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom"/>
+                            <Button HorizontalAlignment="Right" 
+                                    Command="{Binding IrParaRelatoriosCommand}" 
+                                    Background="Transparent" 
+                                    BorderThickness="0" 
+                                    Padding="0" 
+                                    Cursor="Hand"
+                                    VerticalAlignment="Bottom">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                    <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="11" Foreground="{StaticResource BrushPrimary}" Margin="4,2,0,0"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- CARD DIREITA: CLIENTES ESPECIAIS (TOP 5) -->
+                <Border Grid.Column="1" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="20,18" 
+                        Margin="6,0,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Header -->
+                            <RowDefinition Height="*"/>    <!-- Lista Top 5 -->
+                            <RowDefinition Height="Auto"/> <!-- Rodapé -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho Clientes Especiais -->
+                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Clientes especiais ✦" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                </StackPanel>
+                                <TextBlock Text="Quem mais esteve com você" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+
+                            <Border Background="{StaticResource BrushSurfaceSubtle}" 
+                                    CornerRadius="4" 
+                                    Padding="8,3" 
+                                    HorizontalAlignment="Right" 
+                                    VerticalAlignment="Top">
+                                <TextBlock Text="TOP 5" FontSize="10" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                            </Border>
+                        </Grid>
+
+                        <!-- Lista dos 5 Clientes -->
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopClientes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{StaticResource BrushBorder}" 
+                                            BorderThickness="0,0,0,1" 
+                                            Padding="0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="24"/> <!-- 01, 02 -->
+                                                <ColumnDefinition Width="38"/> <!-- Avatar Circle -->
+                                                <ColumnDefinition Width="*"/>  <!-- Nome & Atendimentos -->
+                                                <ColumnDefinition Width="Auto"/> <!-- R$ Total -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Posição -->
+                                            <TextBlock Grid.Column="0" 
+                                                       Text="{Binding Posicao}" 
+                                                       FontSize="11" 
+                                                       FontWeight="Medium" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Avatar Circular -->
+                                            <Border Grid.Column="1" 
+                                                    Width="30" Height="30" 
+                                                    CornerRadius="15" 
+                                                    Background="{Binding AvatarBg}" 
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Iniciais}" 
+                                                           FontSize="11" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="{StaticResource BrushPrimary}" 
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Nome e Atendimentos -->
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,0,0,0">
+                                                <TextBlock Text="{Binding Nome}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                                <TextBlock Text="{Binding AtendimentosTexto}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                                            </StackPanel>
+
+                                            <!-- Total Gasto -->
+                                            <TextBlock Grid.Column="3" 
+                                                       Text="{Binding TotalGastoTexto}" 
+                                                       FontSize="12" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Rodapé: Ver todos os clientes -->
+                        <Button Grid.Row="2" 
+                                Command="{Binding IrParaClientesCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Padding="0" 
+                                Cursor="Hand"
+                                HorizontalAlignment="Right"
+                                Margin="0,12,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Ver todos os clientes" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="11" Foreground="{StaticResource BrushPrimary}" Margin="4,2,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ===================== 4. AGENDA DO DIA (TABELA) ===================== -->
+            <Border Grid.Row="3" 
+                    Background="{StaticResource BrushSurface}" 
+                    BorderBrush="{StaticResource BrushBorder}" 
+                    BorderThickness="1" 
+                    CornerRadius="12" 
+                    Padding="22,18">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Título & Link -->
+                        <RowDefinition Height="Auto"/> <!-- Cabeçalho da Tabela -->
+                        <RowDefinition Height="*"/>    <!-- Linhas da Tabela -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho do Card Agenda do Dia -->
+                    <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Agenda do dia" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,8,0"/>
+                            <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding AgendamentosHoje}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                            </Border>
+                        </StackPanel>
+
+                        <Button HorizontalAlignment="Right" 
+                                Command="{Binding IrParaAgendaCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Ver agenda completa" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="11" Foreground="{StaticResource BrushPrimary}" Margin="4,2,0,0"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Cabeçalho das Colunas da Tabela -->
+                    <Border Grid.Row="1" Background="#FAF9F8" CornerRadius="6" Padding="12,8" Margin="0,0,0,4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="65"/>  <!-- Horário -->
+                                <ColumnDefinition Width="160"/> <!-- Cliente -->
+                                <ColumnDefinition Width="*"/>   <!-- Serviços -->
+                                <ColumnDefinition Width="90"/>  <!-- Duração -->
+                                <ColumnDefinition Width="90"/>  <!-- Valor -->
+                                <ColumnDefinition Width="100"/> <!-- Status -->
+                                <ColumnDefinition Width="24"/>  <!-- Seta -->
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="Horário" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="1" Text="Cliente" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="2" Text="Serviços" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="3" Text="Duração" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="4" Text="Valor" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="5" Text="Status" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Lista de Agendamentos -->
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding AgendaDoDia}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource BrushBorder}" 
+                                        BorderThickness="0,0,0,1" 
+                                        Padding="12,12">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="65"/>  <!-- Horário -->
+                                            <ColumnDefinition Width="160"/> <!-- Cliente -->
+                                            <ColumnDefinition Width="*"/>   <!-- Serviços -->
+                                            <ColumnDefinition Width="90"/>  <!-- Duração -->
+                                            <ColumnDefinition Width="90"/>  <!-- Valor -->
+                                            <ColumnDefinition Width="100"/> <!-- Status -->
+                                            <ColumnDefinition Width="24"/>  <!-- Seta -->
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Horário -->
+                                        <TextBlock Grid.Column="0" 
+                                                   Text="{Binding Horario}" 
+                                                   FontSize="12" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                                   VerticalAlignment="Center"/>
+
+                                        <!-- Cliente (Avatar + Nome) -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,8,0">
+                                                <TextBlock Text="{Binding Iniciais}" 
+                                                           FontSize="10" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="{StaticResource BrushPrimary}" 
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding NomeCliente}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <!-- Serviços -->
+                                        <TextBlock Grid.Column="2" 
+                                                   Text="{Binding Servicos}" 
+                                                   FontSize="12" 
+                                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <!-- Duração com Ícone de Relógio -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:SymbolIcon Symbol="Clock24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{Binding Duracao}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+
+                                        <!-- Valor -->
+                                        <TextBlock Grid.Column="4" 
+                                                   Text="{Binding Valor}" 
+                                                   FontSize="12" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                                   VerticalAlignment="Center"/>
+
+                                        <!-- Badge de Status -->
+                                        <Border Grid.Column="5" 
+                                                Background="{StaticResource BrushSurfaceSubtle}" 
+                                                CornerRadius="10" 
+                                                Padding="8,3" 
+                                                HorizontalAlignment="Left" 
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Ellipse Width="5" Height="5" Fill="{StaticResource BrushPrimary}" Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Seta de Ação -->
+                                        <ui:SymbolIcon Grid.Column="6" Symbol="ChevronRight24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

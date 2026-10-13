@@ -1,12 +1,259 @@
-﻿<Window x:Class="GerenciadorSalao.MainWindow"
+<ui:FluentWindow x:Class="GerenciadorSalao.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:GerenciadorSalao"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:GerenciadorSalao.ViewModels"
+        xmlns:views="clr-namespace:GerenciadorSalao.Views"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Karla Borges - Centro de Estética" 
+        Height="800" Width="800"
+        MinHeight="600" MinWidth="720"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        Background="{StaticResource BrushBackground}">
 
+    <Window.Resources>
+        <!-- Mapeamento de ViewModels para suas respectivas Views no MVVM -->
+        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+            <views:DashboardView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:AgendamentosViewModel}">
+            <views:AgendamentosView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClientesViewModel}">
+            <views:ClientesView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ComandasViewModel}">
+            <views:ComandasView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ServicosViewModel}">
+            <views:ServicosView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ProdutosViewModel}">
+            <views:ProdutosView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RelatoriosViewModel}">
+            <views:RelatoriosView />
+        </DataTemplate>
+
+        <!-- Estilo dos Botões da Sidebar (Pílulas Suaves com Paleta Rosé) -->
+        <Style x:Key="SidebarNavButtonStyle" TargetType="RadioButton">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Margin" Value="14,2,14,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="12,0">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FAF4F2"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- TitleBar nativo do Windows 11 -->
+            <RowDefinition Height="*"/>    <!-- Layout Principal -->
+        </Grid.RowDefinitions>
+
+        <!-- TitleBar do WPF-UI -->
+        <ui:TitleBar Grid.Row="0" Title="Karla Borges - Centro de Estética" />
+
+        <!-- Layout Central: Sidebar (Esquerda) + Área de Conteúdo (Direita) -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230"/> <!-- Sidebar Lateral -->
+                <ColumnDefinition Width="*"/>   <!-- Top Header + Conteúdo da View -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ===================== SIDEBAR LATERAL ===================== -->
+            <Border Grid.Column="0" 
+                    Background="{StaticResource BrushSurface}" 
+                    BorderBrush="{StaticResource BrushBorder}" 
+                    BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Logo -->
+                        <RowDefinition Height="*"/>    <!-- Navegação -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho da Sidebar: Logo Karla Borges -->
+                    <StackPanel Grid.Row="0" Margin="18,18,18,14">
+                        <Image Source="/Resources/Images/logo.png" 
+                               Height="42" 
+                               HorizontalAlignment="Left" 
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Text="CENTRO DE ESTÉTICA" 
+                                   FontSize="9" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushSecondary}" 
+                                   Margin="2,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Lista de Itens do Menu -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <!-- Grupo PRINCIPAL -->
+                            <TextBlock Text="PRINCIPAL" 
+                                       FontSize="10" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                       Margin="20,8,20,6"/>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         IsChecked="True"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Dashboard">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Grid24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Visão geral" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Agendamentos">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Agenda" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Clientes">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="People24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Clientes" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Comandas">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="ClipboardTextEdit24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Comandas" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Servicos">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Cut24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Serviços" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Produtos">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Box24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Produtos" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <!-- Divisor Sutil -->
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="20,12,20,10"/>
+
+                            <!-- Grupo OUTROS -->
+                            <TextBlock Text="OUTROS" 
+                                       FontSize="10" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                       Margin="20,0,20,6"/>
+
+                            <RadioButton Style="{StaticResource SidebarNavButtonStyle}" 
+                                         GroupName="SidebarNavigation"
+                                         Command="{Binding NavigateCommand}" 
+                                         CommandParameter="Relatorios">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="ArrowTrendingLines24" FontSize="18" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Relatórios" FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ===================== ÁREA PRINCIPAL ===================== -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="52"/> <!-- Top Header / Breadcrumb & Status -->
+                    <RowDefinition Height="*"/>  <!-- Conteúdo Dinâmico -->
+                </Grid.RowDefinitions>
+
+                <!-- Top Header Bar (Breadcrumb + Status + Usuário) -->
+                <Border Grid.Row="0" 
+                        Background="{StaticResource BrushSurface}" 
+                        BorderBrush="{StaticResource BrushBorder}" 
+                        BorderThickness="0,0,0,1" 
+                        Padding="28,0">
+                    <Grid>
+                        <!-- Breadcrumbs na Esquerda -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Meu salão" FontSize="13" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="  /  " FontSize="13" Foreground="{StaticResource BrushBorder}"/>
+                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
+                        </StackPanel>
+
+                        <!-- Indicador de Status e Perfil na Direita -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <!-- Status Salão Conectado -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,24,0">
+                                <Ellipse Width="7" Height="7" Fill="{StaticResource BrushSuccess}" Margin="0,0,6,0"/>
+                                <TextBlock Text="Salão conectado" FontSize="12" Foreground="{StaticResource BrushTextSecondary}"/>
+                            </StackPanel>
+
+                            <!-- Avatar e Nome do Usuário -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding UsuarioIniciais}" 
+                                               FontSize="11" 
+                                               FontWeight="Bold" 
+                                               Foreground="{StaticResource BrushPrimary}" 
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="{Binding UsuarioNome}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Área Onde a View Atual é Carregada Dinamicamente -->
+                <ContentControl Grid.Row="1" Content="{Binding CurrentView}"/>
+            </Grid>
+        </Grid>
     </Grid>
-</Window>
+</ui:FluentWindow>

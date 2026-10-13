@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Cores Base -->
+    <Color x:Key="ColorPrimary">#64423C</Color>
+    <Color x:Key="ColorPrimaryHover">#7A4B45</Color>
+    <Color x:Key="ColorSecondary">#885B53</Color>
+    <Color x:Key="ColorAccent">#D1AAA0</Color>
+    <Color x:Key="ColorSurfaceSubtle">#FEE9E6</Color>
+    <Color x:Key="ColorBackground">#FAFAF9</Color>
+    <Color x:Key="ColorSurface">#FFFFFF</Color>
+    <Color x:Key="ColorBorder">#EDE7E5</Color>
+    <Color x:Key="ColorTextPrimary">#34302F</Color>
+    <Color x:Key="ColorTextSecondary">#8A8380</Color>
+
+    <!-- Cores Auxiliares de Status / Feedback -->
+    <Color x:Key="ColorSuccess">#2E7D32</Color>
+    <Color x:Key="ColorSuccessSubtle">#E8F5E9</Color>
+    <Color x:Key="ColorWarning">#ED6C02</Color>
+    <Color x:Key="ColorWarningSubtle">#FFF3E0</Color>
+    <Color x:Key="ColorInfo">#0288D1</Color>
+    <Color x:Key="ColorInfoSubtle">#E1F5FE</Color>
+
+    <!-- Pincéis (Brushes) para Uso Direto em Controles e Telas -->
+    <SolidColorBrush x:Key="BrushPrimary" Color="{StaticResource ColorPrimary}" />
+    <SolidColorBrush x:Key="BrushPrimaryHover" Color="{StaticResource ColorPrimaryHover}" />
+    <SolidColorBrush x:Key="BrushSecondary" Color="{StaticResource ColorSecondary}" />
+    <SolidColorBrush x:Key="BrushAccent" Color="{StaticResource ColorAccent}" />
+    <SolidColorBrush x:Key="BrushSurfaceSubtle" Color="{StaticResource ColorSurfaceSubtle}" />
+    <SolidColorBrush x:Key="BrushBackground" Color="{StaticResource ColorBackground}" />
+    <SolidColorBrush x:Key="BrushSurface" Color="{StaticResource ColorSurface}" />
+    <SolidColorBrush x:Key="BrushBorder" Color="{StaticResource ColorBorder}" />
+    <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
+    <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
+
+    <!-- Pincéis de Status / Badges -->
+    <SolidColorBrush x:Key="BrushSuccess" Color="{StaticResource ColorSuccess}" />
+    <SolidColorBrush x:Key="BrushSuccessSubtle" Color="{StaticResource ColorSuccessSubtle}" />
+    <SolidColorBrush x:Key="BrushWarning" Color="{StaticResource ColorWarning}" />
+    <SolidColorBrush x:Key="BrushWarningSubtle" Color="{StaticResource ColorWarningSubtle}" />
+    <SolidColorBrush x:Key="BrushInfo" Color="{StaticResource ColorInfo}" />
+    <SolidColorBrush x:Key="BrushInfoSubtle" Color="{StaticResource ColorInfoSubtle}" />
+
+</ResourceDictionary>
