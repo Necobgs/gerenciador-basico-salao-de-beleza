@@ -1,0 +1,25 @@
+
+# Arquivos gerados pelo .NET
+**/bin/
+**/obj/
+
+# Configurações locais de IDE
+.vs/
+.vscode/
+
+# Arquivos temporários
+*.user
+*.suo
+*.cache
+
+# Logs
+*.log
+
+# Banco de desenvolvimento local (se aplicável)
+*.db
+*.db-shm
+*.db-wal
+
+# Credenciais e tokens do Google
+google_credentials.json
+GoogleTokens/
