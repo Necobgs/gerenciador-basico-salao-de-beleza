@@ -59,13 +59,22 @@ public partial class DashboardViewModel : ObservableObject
     private DateTime _dataSelecionada = DateTime.Today;
 
     [ObservableProperty]
-    private int _anoSelecionado = DateTime.Today.Year;
+    private string _periodoSelecionado = "Ano completo";
 
     [ObservableProperty]
-    private List<int> _anosDisponiveis = new() { 2024, 2025, 2026 };
+    private List<string> _periodosDisponiveis = new() { "Ano completo", "1º Semestre", "2º Semestre" };
+
+    [ObservableProperty]
+    private int _anoSelecionado = 2026;
+
+    [ObservableProperty]
+    private List<int> _anosDisponiveis = new() { 2026, 2025, 2024 };
 
     [ObservableProperty]
     private decimal _faturamentoAcumuladoAno;
+
+    partial void OnPeriodoSelecionadoChanged(string value) => _ = CarregarDadosAsync();
+    partial void OnAnoSelecionadoChanged(int value) => _ = CarregarDadosAsync();
 
     [ObservableProperty]
     private bool _carregando;
@@ -121,7 +130,18 @@ public partial class DashboardViewModel : ObservableObject
 
             // 5. Faturamento acumulado do ano selecionado
             var faturamentoMensal = await _relatorioService.ObterFaturamentoMensalPorAnoAsync(AnoSelecionado);
-            FaturamentoAcumuladoAno = faturamentoMensal.Sum(f => f.Total);
+            if (PeriodoSelecionado == "1º Semestre")
+            {
+                FaturamentoAcumuladoAno = faturamentoMensal.Where(f => f.Mes <= 6).Sum(f => f.Total);
+            }
+            else if (PeriodoSelecionado == "2º Semestre")
+            {
+                FaturamentoAcumuladoAno = faturamentoMensal.Where(f => f.Mes >= 7).Sum(f => f.Total);
+            }
+            else
+            {
+                FaturamentoAcumuladoAno = faturamentoMensal.Sum(f => f.Total);
+            }
 
             // 6. Top 5 Clientes formatados com iniciais e cores
             var topRaw = await _relatorioService.ObterTopClientesAsync(5, AnoSelecionado);

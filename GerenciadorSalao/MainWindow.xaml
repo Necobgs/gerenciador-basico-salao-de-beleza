@@ -8,7 +8,7 @@
         xmlns:views="clr-namespace:GerenciadorSalao.Views"
         mc:Ignorable="d"
         Title="Karla Borges - Centro de Estética" 
-        Height="800" Width="800"
+        Height="750" Width="750"
         MinHeight="600" MinWidth="720"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
@@ -225,28 +225,6 @@
                             <TextBlock Text="Meu salão" FontSize="13" Foreground="{StaticResource BrushTextSecondary}"/>
                             <TextBlock Text="  /  " FontSize="13" Foreground="{StaticResource BrushBorder}"/>
                             <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
-                        </StackPanel>
-
-                        <!-- Indicador de Status e Perfil na Direita -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <!-- Status Salão Conectado -->
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,24,0">
-                                <Ellipse Width="7" Height="7" Fill="{StaticResource BrushSuccess}" Margin="0,0,6,0"/>
-                                <TextBlock Text="Salão conectado" FontSize="12" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </StackPanel>
-
-                            <!-- Avatar e Nome do Usuário -->
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Width="28" Height="28" CornerRadius="14" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,8,0">
-                                    <TextBlock Text="{Binding UsuarioIniciais}" 
-                                               FontSize="11" 
-                                               FontWeight="Bold" 
-                                               Foreground="{StaticResource BrushPrimary}" 
-                                               HorizontalAlignment="Center" 
-                                               VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="{Binding UsuarioNome}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
-                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </Border>

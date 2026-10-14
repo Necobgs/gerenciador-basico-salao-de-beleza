@@ -18,16 +18,7 @@ public partial class MainViewModel : ObservableObject
     private string _currentNavTag = "Dashboard";
 
     [ObservableProperty]
-    private string _usuarioNome = "Gabriel";
-
-    [ObservableProperty]
-    private string _usuarioIniciais = "GA";
-
-    [ObservableProperty]
     private string _salaoNome = "Karla Borges";
-
-    [ObservableProperty]
-    private bool _salaoConectado = true;
 
     public MainViewModel(IServiceProvider serviceProvider)
     {
