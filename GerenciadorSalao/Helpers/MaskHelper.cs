@@ -10,7 +10,8 @@ public enum MaskType
     None,
     Phone,
     Cpf,
-    NumericOnly
+    NumericOnly,
+    Decimal
 }
 
 public static class MaskHelper
@@ -65,6 +66,34 @@ public static class MaskHelper
                 e.Handled = true;
             }
         }
+        else if (mask == MaskType.Decimal)
+        {
+            // Permite dígitos e separadores decimais (vírgula ou ponto)
+            if (e.Text is not ("," or ".") && !Regex.IsMatch(e.Text, @"^\d+$"))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            var currentText = textBox.Text ?? "";
+            if (e.Text is "," or ".")
+            {
+                if (currentText.Contains(',') || currentText.Contains('.'))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+            else if (currentText.Contains(','))
+            {
+                var partes = currentText.Split(',');
+                if (partes.Length > 1 && partes[1].Length >= 2 && textBox.SelectionLength == 0 && textBox.CaretIndex > currentText.IndexOf(','))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+        }
     }
 
     private static void OnPaste(object sender, DataObjectPastingEventArgs e)
@@ -88,6 +117,21 @@ public static class MaskHelper
                 e.CancelCommand();
             }
         }
+        else if (mask == MaskType.Decimal)
+        {
+            if (e.DataObject.GetDataPresent(DataFormats.Text))
+            {
+                var text = (string)e.DataObject.GetData(DataFormats.Text);
+                if (!Regex.IsMatch(text, @"^[\d,\.]+$"))
+                {
+                    e.CancelCommand();
+                }
+            }
+            else
+            {
+                e.CancelCommand();
+            }
+        }
     }
 
     private static bool _isFormatting;
@@ -99,6 +143,25 @@ public static class MaskHelper
         var mask = GetMask(textBox);
 
         if (mask == MaskType.None) return;
+
+        if (mask == MaskType.Decimal)
+        {
+            if (textBox.Text.Contains('.'))
+            {
+                _isFormatting = true;
+                try
+                {
+                    var caret = textBox.CaretIndex;
+                    textBox.Text = textBox.Text.Replace('.', ',');
+                    textBox.CaretIndex = Math.Min(caret, textBox.Text.Length);
+                }
+                finally
+                {
+                    _isFormatting = false;
+                }
+            }
+            return;
+        }
 
         _isFormatting = true;
         try

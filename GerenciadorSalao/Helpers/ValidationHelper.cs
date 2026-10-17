@@ -175,4 +175,55 @@ public static class ValidationHelper
         var limited = digitos.Length > 11 ? digitos[..11] : digitos;
         return $"{limited[..3]}.{limited.Substring(3, 3)}.{limited.Substring(6, 3)}-{limited[9..]}";
     }
+
+    public static bool ValidarDescricaoProduto(string? descricao, out string? erro)
+    {
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            erro = "O nome / descrição do produto é obrigatório.";
+            return false;
+        }
+
+        var trimmed = descricao.Trim();
+        if (trimmed.Length < 2)
+        {
+            erro = "A descrição deve conter pelo menos 2 caracteres.";
+            return false;
+        }
+
+        erro = null;
+        return true;
+    }
+
+    public static bool ValidarValorProduto(string? valorTexto, out decimal valorDecimal, out string? erro)
+    {
+        valorDecimal = 0;
+        if (string.IsNullOrWhiteSpace(valorTexto))
+        {
+            erro = "O valor do produto é obrigatório.";
+            return false;
+        }
+
+        var limpo = valorTexto.Replace("R$", "").Trim();
+        if (limpo.Contains(',') && limpo.Contains('.'))
+        {
+            limpo = limpo.Replace(".", ""); // remove separador de milhar
+        }
+
+        if (!decimal.TryParse(limpo, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out valorDecimal) &&
+            !decimal.TryParse(limpo, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorDecimal))
+        {
+            erro = "Informe um valor monetário válido (ex: 89,00).";
+            return false;
+        }
+
+        if (valorDecimal < 0)
+        {
+            erro = "O valor do produto não pode ser negativo.";
+            return false;
+        }
+
+        erro = null;
+        return true;
+    }
 }

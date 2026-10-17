@@ -4,7 +4,7 @@ namespace GerenciadorSalao.Services;
 
 public interface IProdutoService
 {
-    Task<List<Produto>> ObterTodosAsync(bool apenasAtivos = true);
+    Task<List<Produto>> ObterTodosAsync(string? termoBusca = null, bool apenasAtivos = true);
     Task<Produto?> ObterPorIdAsync(int id);
     Task<Produto> AdicionarAsync(Produto produto);
     Task AtualizarAsync(Produto produto);
