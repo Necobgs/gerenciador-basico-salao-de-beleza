@@ -91,8 +91,18 @@ Ao adicionar pacotes, priorize:
 
 ---
 
-## 6. Tratamento de Erros e Validação
+## 6. Tratamento de Erros, Validação e Máscaras de Entrada
 
-- **Regras de Negócio:** Centralizadas nos `Services` (ex.: validação de sobreposição de horários, regras de fidelidade).
+- **Validação Obrigatória de Todos os Dados:**
+  - Todo dado inserido ou alterado pelo usuário deve ser estritamente validado antes de ser persistido.
+  - A validação deve ocorrer em duas camadas (*defense-in-depth*):
+    1. **ViewModel:** Validação prévia para feedback imediato e claro na interface (sem expor erros técnicos ao usuário).
+    2. **Services:** Validação de segurança nas regras de negócio para garantir a integridade dos dados antes da persistência.
+  - Utilize os métodos utilitários centralizados em `GerenciadorSalao.Helpers.ValidationHelper` para validações de nomes, telefones, e-mails, CPFs e valores numéricos.
+- **Máscara Automática em Tempo Real nos Inputs:**
+  - Campos de texto (`TextBox`) destinados a dados formatados (ex.: telefone, celular, CPF, CEP, valores) **devem** aplicar máscara automaticamente conforme o usuário digita.
+  - Implementar o comportamento visual via `GerenciadorSalao.Helpers.MaskHelper` (`helpers:MaskHelper.Mask="Phone"`, `MaskHelper.Mask="Cpf"`, etc.).
+  - Bloquear caracteres não permitidos na origem (`PreviewTextInput`) e tratar colagem de texto pela área de transferência (`DataObject.AddPastingHandler`).
+  - Definir `MaxLength` adequado em todos os campos de entrada para prevenir inconsistências e estouro de limites do banco.
+  - Campos de e-mail devem sanitizar espaços indesejados e validar conformidade estrutural.
 - **Mensagens ao Usuário:** Mensagens de feedback devem ser claras, amigáveis e desprovidas de stack traces técnicos.
-- **Validação de Formulários:** Validar no ViewModel antes de invocar o Service.
