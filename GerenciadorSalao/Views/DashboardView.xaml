@@ -82,7 +82,7 @@
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                        MaxHeight="200"
+                                        MaxHeight="360"
                                         Padding="4"
                                         SnapsToDevicePixels="True">
                                     <Border.Effect>
@@ -120,8 +120,8 @@
                                             <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
-                                            <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#66605E"/>
+                                            <Setter Property="Foreground" Value="White"/>
                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
@@ -129,6 +129,97 @@
                             </Setter.Value>
                         </Setter>
                     </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo do Botão Primário (+ Novo agendamento) com Hover Elegante Terracota/Café -->
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource BrushPrimary}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushPrimaryHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#553732"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo dos Botões de Navegação do Mês no Calendário (↑ / ↓) -->
+        <Style x:Key="CalendarNavButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F5F2F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo dos Botões de Ação de Texto (Limpar / Hoje) -->
+        <Style x:Key="FlatActionButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" Padding="6,4" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushInfoSubtle}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -168,34 +259,186 @@
 
                 <!-- Ações do Topo: Data e Novo Agendamento -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="{StaticResource BrushSurface}"
-                            BorderBrush="{StaticResource BrushBorder}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="12,8"
-                            Margin="0,0,10,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DataHojeFormatada}" 
-                                       FontSize="12" 
-                                       FontWeight="Medium" 
-                                       Foreground="{StaticResource BrushTextPrimary}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"/>
-                            <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- Seletor de Data com Calendário Dropdown -->
+                    <Grid Margin="0,0,10,0">
+                        <ToggleButton x:Name="btnDatePicker"
+                                      IsChecked="{Binding IsCalendarOpen, Mode=TwoWay}"
+                                      FocusVisualStyle="{x:Null}"
+                                      Cursor="Hand"
+                                      OverridesDefaultStyle="True">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="btnBorder"
+                                            Background="{StaticResource BrushSurface}"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="12,8">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DataHojeFormatada}" 
+                                                       FontSize="12" 
+                                                       FontWeight="Medium" 
+                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0"/>
+                                            <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FAF8F7"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FAF8F7"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
 
+                        <!-- Popup do Calendário Suspenso -->
+                        <Popup Placement="Bottom"
+                               PlacementTarget="{Binding ElementName=btnDatePicker}"
+                               IsOpen="{Binding IsCalendarOpen, Mode=TwoWay}"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade"
+                               VerticalOffset="6">
+                            <Border Background="{StaticResource BrushSurface}"
+                                    BorderBrush="{StaticResource BrushBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="16"
+                                    Width="260"
+                                    SnapsToDevicePixels="True">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.12" Color="#34302F"/>
+                                </Border.Effect>
+
+                                <StackPanel>
+                                    <!-- Cabeçalho do Mês / Ano e Navegação (↑ / ↓) -->
+                                    <Grid Margin="2,0,2,12">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding MesVisualizadoTexto}" 
+                                                       FontSize="13" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text=" ▾" 
+                                                       FontSize="10" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center" 
+                                                       Margin="2,0,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Button Command="{Binding MesAnteriorCommand}"
+                                                    ToolTip="Mês anterior"
+                                                    Style="{StaticResource CalendarNavButtonStyle}"
+                                                    Margin="0,0,2,0">
+                                                <ui:SymbolIcon Symbol="ArrowUp24" FontSize="13" Foreground="{StaticResource BrushTextPrimary}"/>
+                                            </Button>
+                                            <Button Command="{Binding MesProximoCommand}"
+                                                    ToolTip="Próximo mês"
+                                                    Style="{StaticResource CalendarNavButtonStyle}">
+                                                <ui:SymbolIcon Symbol="ArrowDown24" FontSize="13" Foreground="{StaticResource BrushTextPrimary}"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Cabeçalho dos Dias da Semana: D S T Q Q S S -->
+                                    <UniformGrid Columns="7" Margin="0,0,0,8">
+                                        <TextBlock Text="D" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="T" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Q" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Q" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                    </UniformGrid>
+
+                                    <!-- Grade de Dias do Mês (6 semanas x 7 dias = 42 células) -->
+                                    <ItemsControl ItemsSource="{Binding DiasCalendario}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="7" Rows="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Command="{Binding DataContext.SelecionarDataCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding Data}"
+                                                        FocusVisualStyle="{x:Null}"
+                                                        Cursor="Hand"
+                                                        Margin="0,2"
+                                                        OverridesDefaultStyle="True">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="dayBorder"
+                                                                    Width="28" Height="28"
+                                                                    CornerRadius="4"
+                                                                    Background="Transparent"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center">
+                                                                <TextBlock x:Name="dayText"
+                                                                           Text="{Binding Dia}"
+                                                                           FontSize="12"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"
+                                                                           Foreground="{StaticResource BrushTextPrimary}"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <DataTrigger Binding="{Binding IsMesAtual}" Value="False">
+                                                                    <Setter TargetName="dayText" Property="Foreground" Value="#A8A29E"/>
+                                                                </DataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                                                                        <Condition Binding="{Binding IsSelecionado}" Value="False"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter TargetName="dayBorder" Property="Background" Value="#F5F2F0"/>
+                                                                </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding IsSelecionado}" Value="True">
+                                                                    <Setter TargetName="dayBorder" Property="Background" Value="#504746"/>
+                                                                    <Setter TargetName="dayText" Property="Foreground" Value="White"/>
+                                                                    <Setter TargetName="dayText" Property="FontWeight" Value="SemiBold"/>
+                                                                </DataTrigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Linha de Ações Inferior: Limpar e Hoje -->
+                                    <Grid Margin="2,14,2,2">
+                                        <Button Command="{Binding LimparDataCommand}"
+                                                Content="Limpar"
+                                                FontSize="12"
+                                                FontWeight="Medium"
+                                                Foreground="{StaticResource BrushInfo}"
+                                                HorizontalAlignment="Left"
+                                                Style="{StaticResource FlatActionButtonStyle}"/>
+
+                                        <Button Command="{Binding HojeDataCommand}"
+                                                Content="Hoje"
+                                                FontSize="12"
+                                                FontWeight="Medium"
+                                                Foreground="{StaticResource BrushInfo}"
+                                                HorizontalAlignment="Right"
+                                                Style="{StaticResource FlatActionButtonStyle}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <!-- Botão Novo Agendamento -->
                     <Button Command="{Binding NovoAgendamentoCommand}"
-                            Background="{StaticResource BrushPrimary}"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Padding="14,9"
-                            Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
+                            Style="{StaticResource PrimaryActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                             <TextBlock Text="Novo agendamento" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
@@ -405,7 +648,7 @@
                                            Foreground="{StaticResource BrushTextPrimary}" 
                                            Margin="0,0,10,0"/>
                                 <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                                    <TextBlock Text="Acumulado do ano" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
+                                    <TextBlock Text="{Binding TagFaturamentoPeriodo}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
                                 </Border>
                             </StackPanel>
 
@@ -415,35 +658,45 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Gráfico de Curva Vetorial Suave com Degradê Rosé -->
-                        <Grid Grid.Row="2" Height="170" Margin="0,0,0,12">
+                        <!-- Área Completa do Gráfico (Eixo Y + Grid/Linha + Eixo X Meses) -->
+                        <Grid Grid.Row="2" Margin="0,0,0,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="148"/> <!-- Área do Gráfico e Linhas -->
+                                <RowDefinition Height="24"/>  <!-- Labels dos Meses (Eixo X) -->
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="48"/> <!-- Eixo Y Labels -->
-                                <ColumnDefinition Width="*"/>   <!-- Área da Linha e Grid -->
+                                <ColumnDefinition Width="*"/>   <!-- Área do Gráfico Interativo -->
                             </Grid.ColumnDefinitions>
 
                             <!-- Labels do Eixo Y -->
-                            <Grid Grid.Column="0">
+                            <Grid Grid.Row="0" Grid.Column="0">
                                 <TextBlock Text="3.4 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top"/>
-                                <TextBlock Text="2.55 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,38,0,0"/>
-                                <TextBlock Text="1.7 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,76,0,0"/>
-                                <TextBlock Text="0.85 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,114,0,0"/>
-                                <TextBlock Text="R$ 0" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom"/>
+                                <TextBlock Text="2.55 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,35,0,0"/>
+                                <TextBlock Text="1.7 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,70,0,0"/>
+                                <TextBlock Text="0.85 mil" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,105,0,0"/>
+                                <TextBlock Text="R$ 0" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                             </Grid>
 
-                            <!-- Área do Gráfico -->
-                            <Grid Grid.Column="1">
+                            <!-- Área do Gráfico com Curva, Linhas e Hover Interativo -->
+                            <Grid x:Name="ChartAreaGrid" 
+                                  Grid.Row="0" 
+                                  Grid.Column="1" 
+                                  Background="Transparent"
+                                  MouseMove="ChartArea_MouseMove"
+                                  MouseLeave="ChartArea_MouseLeave">
+
                                 <!-- Linhas de Guia Horizontais Tracejadas -->
-                                <Canvas>
-                                    <Line X1="0" Y1="8" X2="450" Y2="8" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                    <Line X1="0" Y1="45" X2="450" Y2="45" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                    <Line X1="0" Y1="82" X2="450" Y2="82" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                    <Line X1="0" Y1="120" X2="450" Y2="120" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                    <Line X1="0" Y1="150" X2="450" Y2="150" Stroke="{StaticResource BrushBorder}"/>
+                                <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <Line X1="0" Y1="6" X2="600" Y2="6" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="41" X2="600" Y2="41" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="76" X2="600" Y2="76" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="111" X2="600" Y2="111" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
+                                    <Line X1="0" Y1="145" X2="600" Y2="145" Stroke="{StaticResource BrushBorder}"/>
                                 </Canvas>
 
                                 <!-- Curva e Preenchimento em Degradê Rosé Marsala -->
-                                <Path Stretch="Fill" Margin="4,8,4,18" Stroke="{StaticResource BrushPrimary}" StrokeThickness="3">
+                                <Path Stretch="Fill" Margin="4,8,4,4" Stroke="{StaticResource BrushPrimary}" StrokeThickness="3">
                                     <Path.Data>
                                         <PathGeometry>
                                             <PathFigure StartPoint="0,85">
@@ -454,7 +707,7 @@
                                 </Path>
 
                                 <!-- Preenchimento Suave sob a Curva -->
-                                <Path Stretch="Fill" Margin="4,8,4,18" Opacity="0.18">
+                                <Path Stretch="Fill" Margin="4,8,4,4" Opacity="0.18">
                                     <Path.Fill>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop Color="#64423C" Offset="0.0"/>
@@ -471,41 +724,108 @@
                                         </PathGeometry>
                                     </Path.Data>
                                 </Path>
+
+                                <!-- Camada de Hover: Linha Vertical Guia, Ponto e Tooltip Flutuante -->
+                                <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+                                    <!-- Linha Vertical Guia -->
+                                    <Line X1="{Binding HoverIndicatorX}" 
+                                          Y1="6" 
+                                          X2="{Binding HoverIndicatorX}" 
+                                          Y2="145" 
+                                          Stroke="#D5CEC9" 
+                                          StrokeThickness="1" 
+                                          Visibility="{Binding IsChartHovered, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                    <!-- Ponto Marcador na Curva -->
+                                    <Ellipse Canvas.Left="{Binding HoverDotLeft}" 
+                                             Canvas.Top="{Binding HoverDotTop}"
+                                             Width="10" Height="10"
+                                             Fill="{StaticResource BrushPrimary}"
+                                             Stroke="White"
+                                             StrokeThickness="2"
+                                             Visibility="{Binding IsChartHovered, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Ellipse.Effect>
+                                            <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.3" Color="#64423C"/>
+                                        </Ellipse.Effect>
+                                    </Ellipse>
+
+                                    <!-- Card Tooltip Flutuante -->
+                                    <Border Canvas.Left="{Binding HoverTooltipX}" 
+                                            Canvas.Top="{Binding HoverTooltipY}"
+                                            Background="White"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Padding="12,8"
+                                            Visibility="{Binding IsChartHovered, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="10" Direction="270" ShadowDepth="3" Opacity="0.12" Color="#34302F"/>
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding HoverMesNome}" 
+                                                       FontSize="13" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                       Margin="0,0,0,3"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="Faturamento : " 
+                                                           FontSize="12" 
+                                                           Foreground="{StaticResource BrushTextSecondary}"/>
+                                                <TextBlock Text="{Binding HoverMesValorFormatado}" 
+                                                           FontSize="12" 
+                                                           FontWeight="SemiBold" 
+                                                           Foreground="{StaticResource BrushTextPrimary}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Canvas>
                             </Grid>
+
+                            <!-- Labels dos Meses (Eixo X) -->
+                            <UniformGrid Grid.Row="1" Grid.Column="1" Columns="12" VerticalAlignment="Center">
+                                <TextBlock Text="Jan" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Fev" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Mar" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Abr" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Mai" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Jun" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Jul" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Ago" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Set" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Out" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Nov" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Dez" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            </UniformGrid>
                         </Grid>
 
-                        <!-- Labels dos Meses (Eixo X) -->
-                        <UniformGrid Grid.Row="2" Columns="12" VerticalAlignment="Bottom" Margin="48,0,0,0">
-                            <TextBlock Text="Jan" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Fev" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Mar" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Abr" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Mai" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Jun" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Jul" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Ago" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Set" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Out" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Nov" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Dez" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
-                        </UniformGrid>
-
                         <!-- Rodapé do Card Faturamento -->
-                        <Grid Grid.Row="3" Margin="0,10,0,0">
-                            <Border Height="1" Background="{StaticResource BrushBorder}" VerticalAlignment="Top" Margin="0,0,0,10"/>
-                            <TextBlock Text="Considera apenas comandas pagas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom"/>
-                            <Button HorizontalAlignment="Right" 
-                                    Command="{Binding IrParaRelatoriosCommand}" 
-                                    Background="Transparent" 
-                                    BorderThickness="0" 
-                                    Padding="0" 
-                                    Cursor="Hand"
-                                    VerticalAlignment="Bottom">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                                    <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="11" Foreground="{StaticResource BrushPrimary}" Margin="4,2,0,0"/>
-                                </StackPanel>
-                            </Button>
+                        <Grid Grid.Row="3" Margin="-22,14,-22,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/> <!-- Linha Divisória de ponta a ponta -->
+                                <RowDefinition Height="Auto"/> <!-- Textos e Botão -->
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Height="1" Background="{StaticResource BrushBorder}"/>
+
+                            <Grid Grid.Row="1" Margin="22,12,22,0">
+                                <TextBlock Text="Considera apenas comandas pagas" 
+                                           FontSize="11" 
+                                           Foreground="{StaticResource BrushTextSecondary}" 
+                                           VerticalAlignment="Center"/>
+
+                                <Button HorizontalAlignment="Right" 
+                                        VerticalAlignment="Center"
+                                        Command="{Binding IrParaRelatoriosCommand}" 
+                                        Background="Transparent" 
+                                        BorderThickness="0" 
+                                        Padding="0" 
+                                        Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}" VerticalAlignment="Center"/>
+                                        <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="12" Foreground="{StaticResource BrushPrimary}" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </Border>
