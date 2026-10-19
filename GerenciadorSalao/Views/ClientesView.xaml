@@ -4,21 +4,658 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:GerenciadorSalao.ViewModels"
+             xmlns:helpers="clr-namespace:GerenciadorSalao.Helpers"
+             d:DataContext="{d:DesignInstance Type=vm:ClientesViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="900">
-    <Grid Margin="24">
-        <Border Background="{StaticResource BrushSurface}"
-                BorderBrush="{StaticResource BrushBorder}"
-                BorderThickness="1"
-                CornerRadius="12"
-                Padding="32">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Border Width="64" Height="64" CornerRadius="16" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,0,16">
-                    <ui:SymbolIcon Symbol="People24" FontSize="28" Foreground="{StaticResource BrushPrimary}" />
+             d:DesignHeight="800" d:DesignWidth="1100">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- Estilo dos Campos de Formulário (Inputs Modernos) -->
+        <Style x:Key="ModalTextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+            <Setter Property="Background" Value="#F8F6F5"/>
+            <Setter Property="BorderBrush" Value="#E8E2E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                                <Setter TargetName="border" Property="Background" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botão de Ação Redondo / Sutil para a Tabela -->
+        <Style x:Key="RowActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- ===================== CONTEÚDO PRINCIPAL DA TELA ===================== -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="28,20,28,32">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- 1. Header da Página -->
+                    <RowDefinition Height="Auto"/> <!-- 2. Barra de Busca e Contador -->
+                    <RowDefinition Height="*"/>    <!-- 3. Tabela de Clientes -->
+                </Grid.RowDefinitions>
+
+                <!-- ===================== 1. HEADER DA PÁGINA ===================== -->
+                <Grid Grid.Row="0" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Clientes" 
+                                   FontSize="26" 
+                                   FontWeight="Bold" 
+                                   Foreground="{StaticResource BrushTextPrimary}"/>
+                        <TextBlock Text="Cada cliente tem uma história. Cuide de todas elas." 
+                                   FontSize="13" 
+                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                   Margin="0,3,0,0"/>
+                    </StackPanel>
+
+                    <!-- Botão Novo Cliente -->
+                    <Button Grid.Column="1"
+                            Command="{Binding AbrirModalNovoClienteCommand}"
+                            Background="{StaticResource BrushPrimary}"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Padding="16,9"
+                            Cursor="Hand"
+                            VerticalAlignment="Center">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
+                            <TextBlock Text="Novo cliente" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- ===================== 2. BARRA DE BUSCA E CONTADOR ===================== -->
+                <Grid Grid.Row="1" Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="380"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Caixa de Pesquisa com Ícone de Lupa -->
+                    <Border Grid.Column="0"
+                            Background="{StaticResource BrushSurface}"
+                            BorderBrush="{StaticResource BrushBorder}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="10,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ui:SymbolIcon Grid.Column="0" 
+                                           Symbol="Search24" 
+                                           FontSize="15" 
+                                           Foreground="{StaticResource BrushTextSecondary}" 
+                                           VerticalAlignment="Center" 
+                                           Margin="0,0,8,0"/>
+
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12"
+                                     Foreground="{StaticResource BrushTextPrimary}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     VerticalAlignment="Center"/>
+
+                            <!-- Placeholder Text -->
+                            <TextBlock Grid.Column="1"
+                                       Text="Buscar por nome ou telefone..."
+                                       FontSize="12"
+                                       Foreground="{StaticResource BrushTextSecondary}"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TermoBusca}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+
+                    <!-- Contador de Clientes à Direita -->
+                    <TextBlock Grid.Column="1" 
+                               HorizontalAlignment="Right" 
+                               VerticalAlignment="Center"
+                               FontSize="12" 
+                               Foreground="{StaticResource BrushTextSecondary}">
+                        <Run Text="{Binding TotalClientes}"/>
+                        <Run Text=" clientes"/>
+                    </TextBlock>
+                </Grid>
+
+                <!-- ===================== 3. TABELA DE CLIENTES ===================== -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource BrushSurface}"
+                        BorderBrush="{StaticResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Cabeçalho da Tabela -->
+                            <RowDefinition Height="*"/>    <!-- Lista de Linhas ou Empty State -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho das Colunas -->
+                        <Border Grid.Row="0" 
+                                Background="#FAF9F8" 
+                                CornerRadius="12,12,0,0" 
+                                Padding="20,12" 
+                                BorderBrush="{StaticResource BrushBorder}" 
+                                BorderThickness="0,0,0,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.2*"/> <!-- Cliente -->
+                                    <ColumnDefinition Width="1.6*"/> <!-- Telefone -->
+                                    <ColumnDefinition Width="2*"/>   <!-- E-mail -->
+                                    <ColumnDefinition Width="1.2*"/> <!-- Atendimentos -->
+                                    <ColumnDefinition Width="1.4*"/> <!-- Total gasto -->
+                                    <ColumnDefinition Width="90"/>   <!-- Ações -->
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="Cliente" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Grid.Column="1" Text="Telefone" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Grid.Column="2" Text="E-mail" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Grid.Column="3" Text="Atendimentos" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Grid.Column="4" Text="Total gasto" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Grid.Column="5" Text="Ações" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Linhas da Tabela quando existem clientes -->
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Clientes}" Visibility="{Binding TemClientes, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{StaticResource BrushBorder}" 
+                                            BorderThickness="0,0,0,1" 
+                                            Padding="20,12"
+                                            Background="Transparent">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#FAF8F7"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2.2*"/> <!-- Cliente -->
+                                                <ColumnDefinition Width="1.6*"/> <!-- Telefone -->
+                                                <ColumnDefinition Width="2*"/>   <!-- E-mail -->
+                                                <ColumnDefinition Width="1.2*"/> <!-- Atendimentos -->
+                                                <ColumnDefinition Width="1.4*"/> <!-- Total gasto -->
+                                                <ColumnDefinition Width="90"/>   <!-- Ações -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Coluna Cliente: Avatar Circular + Nome e Apelido -->
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Border Width="34" Height="34" 
+                                                        CornerRadius="17" 
+                                                        Background="{Binding AvatarBg}" 
+                                                        Margin="0,0,12,0" 
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Iniciais}" 
+                                                               FontSize="11" 
+                                                               FontWeight="Bold" 
+                                                               Foreground="{StaticResource BrushPrimary}" 
+                                                               HorizontalAlignment="Center" 
+                                                               VerticalAlignment="Center"/>
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding NomeExibicao}" 
+                                                               FontSize="13" 
+                                                               FontWeight="SemiBold" 
+                                                               Foreground="{StaticResource BrushTextPrimary}"/>
+                                                    <TextBlock Text="{Binding Observacao}" 
+                                                               FontSize="11" 
+                                                               Foreground="{StaticResource BrushTextSecondary}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               MaxWidth="180"
+                                                               Margin="0,1,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <Trigger Property="Text" Value="">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </Trigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Coluna Telefone -->
+                                            <TextBlock Grid.Column="1" 
+                                                       Text="{Binding TelefoneExibicao}" 
+                                                       FontSize="12" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Coluna E-mail -->
+                                            <TextBlock Grid.Column="2" 
+                                                       Text="{Binding EmailExibicao}" 
+                                                       FontSize="12" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"/>
+
+                                            <!-- Coluna Atendimentos -->
+                                            <TextBlock Grid.Column="3" 
+                                                       Text="{Binding TotalAtendimentos}" 
+                                                       FontSize="12" 
+                                                       FontWeight="Medium"
+                                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Coluna Total Gasto -->
+                                            <TextBlock Grid.Column="4" 
+                                                       Text="{Binding TotalGastoFormatado}" 
+                                                       FontSize="12" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                                       VerticalAlignment="Center"/>
+
+                                            <!-- Coluna Ações: Histórico, Editar, Excluir -->
+                                            <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <!-- Histórico -->
+                                                <Button Style="{StaticResource RowActionButtonStyle}"
+                                                        Command="{Binding DataContext.AbrirHistoricoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Histórico de visitas">
+                                                    <ui:SymbolIcon Symbol="History24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                </Button>
+
+                                                <!-- Editar -->
+                                                <Button Style="{StaticResource RowActionButtonStyle}"
+                                                        Command="{Binding DataContext.AbrirModalEditarClienteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Editar dados">
+                                                    <ui:SymbolIcon Symbol="Edit24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                </Button>
+
+                                                <!-- Excluir -->
+                                                <Button Style="{StaticResource RowActionButtonStyle}"
+                                                        Command="{Binding DataContext.ExcluirClienteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="Excluir cliente">
+                                                    <ui:SymbolIcon Symbol="Delete24" FontSize="15" Foreground="#D32F2F"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Estado Vazio quando não há clientes encontrados -->
+                        <Border Grid.Row="1" 
+                                Padding="40" 
+                                Visibility="{Binding SemClientes, Converter={StaticResource BoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Width="48" Height="48" CornerRadius="24" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Center" Margin="0,0,0,12">
+                                    <ui:SymbolIcon Symbol="People24" FontSize="22" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Nenhum cliente encontrado" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Tente ajustar a busca ou cadastre um novo cliente no botão acima." FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,4,0,16" HorizontalAlignment="Center"/>
+                                <Button Command="{Binding AbrirModalNovoClienteCommand}"
+                                        Background="{StaticResource BrushPrimary}"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Padding="14,8"
+                                        Cursor="Hand"
+                                        HorizontalAlignment="Center">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="6"/>
+                                        </Style>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:SymbolIcon Symbol="Add24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Cadastrar cliente" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </Border>
-                <TextBlock Text="Controle de Clientes" FontSize="22" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
-                <TextBlock Text="Cadastro, consulta de histórico e ficha de preferências." Foreground="{StaticResource BrushTextSecondary}" Margin="0,8,0,0" HorizontalAlignment="Center"/>
-            </StackPanel>
-        </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- ===================== MODAL: NOVO CLIENTE / EDITAR CLIENTE ===================== -->
+        <Grid Background="#55000000" Visibility="{Binding IsModalClienteAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="White" 
+                    CornerRadius="14" 
+                    Width="460" 
+                    Padding="26,24" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Header do Modal -->
+                        <RowDefinition Height="Auto"/> <!-- Formulário -->
+                        <RowDefinition Height="Auto"/> <!-- Mensagem de Erro -->
+                        <RowDefinition Height="Auto"/> <!-- Botão Salvar -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Header com Título, Subtítulo e Botão Fechar (X) -->
+                    <Grid Grid.Row="0" Margin="0,0,0,18">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ModalTitulo}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="Informações e preferências do cliente." FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+
+                        <!-- Botão Fechar (X) -->
+                        <Button HorizontalAlignment="Right" 
+                                VerticalAlignment="Top" 
+                                Command="{Binding FecharModalClienteCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Cursor="Hand" 
+                                Padding="6">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Campos do Formulário -->
+                    <StackPanel Grid.Row="1">
+                        <!-- Campo Nome -->
+                        <TextBlock Text="Nome" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 Text="{Binding FormNome, UpdateSourceTrigger=PropertyChanged}" 
+                                 MaxLength="150"
+                                 Margin="0,0,0,14"/>
+
+                        <!-- Campo Apelido (Opcional) -->
+                        <TextBlock Text="Apelido (opcional)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 Text="{Binding FormApelido, UpdateSourceTrigger=PropertyChanged}" 
+                                 MaxLength="100"
+                                 Margin="0,0,0,14"/>
+
+                        <!-- Campo Telefone (Máscara Automática ao Digitar) -->
+                        <TextBlock Text="Telefone" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 helpers:MaskHelper.Mask="Phone"
+                                 MaxLength="15"
+                                 Text="{Binding FormTelefone, UpdateSourceTrigger=PropertyChanged}" 
+                                 Margin="0,0,0,14"/>
+
+                        <!-- Campo E-mail / Contato -->
+                        <TextBlock Text="E-mail / contato" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 MaxLength="150"
+                                 Text="{Binding FormEmail, UpdateSourceTrigger=PropertyChanged}" 
+                                 Margin="0,0,0,14"/>
+
+                        <!-- Campo Notas / Preferências -->
+                        <TextBlock Text="Notas" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 MaxLength="1000"
+                                 Text="{Binding FormObservacao, UpdateSourceTrigger=PropertyChanged}" 
+                                 AcceptsReturn="True" 
+                                 TextWrapping="Wrap" 
+                                 Height="80" 
+                                 VerticalContentAlignment="Top" 
+                                 Margin="0,0,0,14"/>
+                    </StackPanel>
+
+                    <!-- Mensagem de Validação / Erro -->
+                    <Border Grid.Row="2" 
+                            Background="#FDECEA" 
+                            CornerRadius="6" 
+                            Padding="10,6" 
+                            Margin="0,0,0,14">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FormMensagemErro}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="{Binding FormMensagemErro}" FontSize="11" Foreground="#C62828"/>
+                    </Border>
+
+                    <!-- Botão Salvar Cliente em Largura Total -->
+                    <Button Grid.Row="3"
+                            Command="{Binding SalvarClienteCommand}"
+                            Background="{StaticResource BrushPrimary}"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Padding="0,12"
+                            Cursor="Hand"
+                            HorizontalAlignment="Stretch">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                        <TextBlock Text="Salvar cliente" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ===================== MODAL: HISTÓRICO DO CLIENTE ===================== -->
+        <Grid Background="#55000000" Visibility="{Binding IsHistoricoAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="White" 
+                    CornerRadius="14" 
+                    Width="520" 
+                    MaxHeight="620" 
+                    Padding="26,24" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Header -->
+                        <RowDefinition Height="Auto"/> <!-- Destaques / Cards -->
+                        <RowDefinition Height="*"/>    <!-- Lista de Comandas -->
+                        <RowDefinition Height="Auto"/> <!-- Rodapé -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Header com Nome do Cliente e Fechar -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ClienteHistoricoSelecionado.Nome, StringFormat='{}Histórico — {0}'}" 
+                                       FontSize="18" 
+                                       FontWeight="Bold" 
+                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="Histórico de visitas e comandas" 
+                                       FontSize="12" 
+                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+
+                        <!-- Botão Fechar -->
+                        <Button HorizontalAlignment="Right" 
+                                VerticalAlignment="Top" 
+                                Command="{Binding FecharHistoricoCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Cursor="Hand" 
+                                Padding="6">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Cards de Resumo: Total Gasto e Total Atendimentos -->
+                    <Grid Grid.Row="1" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Card Total Gasto -->
+                        <Border Grid.Column="0" 
+                                Background="{StaticResource BrushSurfaceSubtle}" 
+                                CornerRadius="8" 
+                                Padding="14,10" 
+                                Margin="0,0,6,0">
+                            <StackPanel>
+                                <TextBlock Text="Total investido" FontSize="11" Foreground="{StaticResource BrushSecondary}"/>
+                                <TextBlock Text="{Binding HistoricoTotalGastoTexto}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card Total Atendimentos -->
+                        <Border Grid.Column="1" 
+                                Background="#FAF9F8" 
+                                BorderBrush="{StaticResource BrushBorder}" 
+                                BorderThickness="1" 
+                                CornerRadius="8" 
+                                Padding="14,10" 
+                                Margin="6,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Atendimentos realizados" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                                <TextBlock Text="{Binding HistoricoTotalAtendimentosTexto}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Lista de Visitas / Comandas -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="320">
+                        <StackPanel>
+                            <!-- Comandas Existentes -->
+                            <ItemsControl ItemsSource="{Binding HistoricoComandas}" Visibility="{Binding TemHistoricoComandas, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource BrushBorder}" 
+                                                BorderThickness="0,0,0,1" 
+                                                Padding="0,10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Detalhes da Comanda -->
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding DataFormatada}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                                        <TextBlock Text="{Binding ComandaId, StringFormat='{} • Comanda #{0}'}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="4,0,0,0"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding ItensResumo}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+
+                                                <!-- Valor e Status -->
+                                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding ValorTotalFormatado}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Right"/>
+                                                    <Border Background="{StaticResource BrushSuccessSubtle}" CornerRadius="4" Padding="6,2" Margin="0,3,0,0" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource BrushSuccess}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Vazio no Histórico -->
+                            <Border Padding="20" Visibility="{Binding SemHistoricoComandas, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Nenhuma visita finalizada registrada até o momento." FontSize="12" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Rodapé com Botão Fechar -->
+                    <Button Grid.Row="3" 
+                            Command="{Binding FecharHistoricoCommand}" 
+                            Background="#F8F6F5" 
+                            BorderBrush="{StaticResource BrushBorder}" 
+                            BorderThickness="1" 
+                            Foreground="{StaticResource BrushTextPrimary}" 
+                            Padding="0,10" 
+                            Cursor="Hand" 
+                            HorizontalAlignment="Stretch" 
+                            Margin="0,16,0,0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="8"/>
+                            </Style>
+                        </Button.Resources>
+                        <TextBlock Text="Fechar histórico" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

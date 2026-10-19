@@ -1,3 +1,5 @@
+using System.Windows;
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GerenciadorSalao.Models;
@@ -5,6 +7,18 @@ using GerenciadorSalao.Models.DTOs;
 using GerenciadorSalao.Services;
 
 namespace GerenciadorSalao.ViewModels;
+
+public class ChartMesItem
+{
+    public int Mes { get; set; }
+    public string MesNome { get; set; } = string.Empty;
+    public decimal Valor { get; set; }
+    public string ValorFormatado { get; set; } = string.Empty;
+    public string TooltipTexto { get; set; } = string.Empty;
+    public double X { get; set; }
+    public double Y { get; set; }
+    public bool TemValor => Valor > 0;
+}
 
 public class TopClienteDashboardItem
 {
@@ -56,6 +70,11 @@ public partial class DashboardViewModel : ObservableObject
     private int _totalClientes;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DataHojeFormatada))]
+    [NotifyPropertyChangedFor(nameof(IsHoje))]
+    [NotifyPropertyChangedFor(nameof(TituloFaturamentoDia))]
+    [NotifyPropertyChangedFor(nameof(TituloAgendamentosDia))]
+    [NotifyPropertyChangedFor(nameof(TituloAgendaTabela))]
     private DateTime _dataSelecionada = DateTime.Today;
 
     [ObservableProperty]
@@ -80,10 +99,10 @@ public partial class DashboardViewModel : ObservableObject
     };
 
     [ObservableProperty]
-    private int _anoSelecionado = 2026;
+    private int _anoSelecionado = DateTime.Today.Year;
 
     [ObservableProperty]
-    private List<int> _anosDisponiveis = new() { 2026, 2025, 2024 };
+    private List<int> _anosDisponiveis = new() { DateTime.Today.Year };
 
     [ObservableProperty]
     private decimal _faturamentoAcumuladoAno;
@@ -142,12 +161,58 @@ public partial class DashboardViewModel : ObservableObject
     private bool _carregando;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TemAgendamentos))]
+    [NotifyPropertyChangedFor(nameof(SemAgendamentos))]
     private List<AgendaItemDashboard> _agendaDoDia = new();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TemTopClientes))]
+    [NotifyPropertyChangedFor(nameof(SemTopClientes))]
     private List<TopClienteDashboardItem> _topClientes = new();
 
+    // Propriedades do Gráfico Dinâmico
+    [ObservableProperty]
+    private Geometry? _graficoLinhaGeometry;
+
+    [ObservableProperty]
+    private Geometry? _graficoAreaGeometry;
+
+    [ObservableProperty]
+    private List<ChartMesItem> _chartMeses = new();
+
+    [ObservableProperty]
+    private string _yLabelMax = "R$ 0";
+
+    [ObservableProperty]
+    private string _yLabel75 = "R$ 0";
+
+    [ObservableProperty]
+    private string _yLabel50 = "R$ 0";
+
+    [ObservableProperty]
+    private string _yLabel25 = "R$ 0";
+
+    [ObservableProperty]
+    private string _yLabel0 = "R$ 0";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SemDadosNoGrafico))]
+    private bool _temDadosNoGrafico;
+
+    [ObservableProperty]
+    private int _colunasGrafico = 12;
+
+    // Propriedades Computadas para Bindings da UI
+    public bool SemDadosNoGrafico => !TemDadosNoGrafico;
+    public bool TemAgendamentos => AgendaDoDia.Count > 0;
+    public bool SemAgendamentos => AgendaDoDia.Count == 0;
+    public bool TemTopClientes => TopClientes.Count > 0;
+    public bool SemTopClientes => TopClientes.Count == 0;
+    public bool IsHoje => DataSelecionada.Date == DateTime.Today;
     public string DataHojeFormatada => DataSelecionada.ToString("dd/MM/yyyy");
+    public string TituloFaturamentoDia => IsHoje ? "Faturamento de hoje" : "Faturamento do dia";
+    public string TituloAgendamentosDia => IsHoje ? "Agendamentos hoje" : "Agendamentos do dia";
+    public string TituloAgendaTabela => IsHoje ? "Agenda de hoje" : "Agenda do dia";
 
     public DashboardViewModel(
         IRelatorioService relatorioService,
@@ -182,15 +247,33 @@ public partial class DashboardViewModel : ObservableObject
             var inicioDia = DataSelecionada.Date;
             var fimDia = inicioDia.AddDays(1).AddTicks(-1);
 
-            // 1. Faturamento do dia
+            // 1. Faturamento do dia selecionado
             FaturamentoHoje = await _relatorioService.ObterFaturamentoTotalPeriodoAsync(inicioDia, fimDia);
 
-            // 2. Comandas abertas e finalizadas
+            // 2. Comandas abertas e finalizadas do dia
             var todasComandas = await _comandaService.ObterTodasAsync();
             ComandasAbertas = todasComandas.Count(c => c.Status == StatusComanda.Aberta);
             ComandasFinalizadasHoje = todasComandas.Count(c => c.Status == StatusComanda.Finalizada && c.DataFechamento?.Date == inicioDia);
 
-            // 3. Agendamentos de hoje
+            // Atualiza lista de anos disponíveis com base no banco e ano atual
+            var anosSet = new SortedSet<int> { DateTime.Today.Year, DateTime.Today.Year - 1, DateTime.Today.Year - 2 };
+            foreach (var c in todasComandas)
+            {
+                var dt = c.DataFechamento ?? c.DataAbertura;
+                if (dt.Year > 2000 && dt.Year < 2100)
+                    anosSet.Add(dt.Year);
+            }
+            var anosOrdenados = anosSet.Reverse().ToList();
+            if (!AnosDisponiveis.SequenceEqual(anosOrdenados))
+            {
+                AnosDisponiveis = anosOrdenados;
+            }
+            if (!AnosDisponiveis.Contains(AnoSelecionado))
+            {
+                AnoSelecionado = AnosDisponiveis[0];
+            }
+
+            // 3. Agendamentos do dia selecionado
             var agendamentosHojeLista = await _agendamentoService.ObterPorPeriodoAsync(inicioDia, fimDia);
             AgendamentosHoje = agendamentosHojeLista.Count;
             AgendamentosPendentesHoje = agendamentosHojeLista.Count(a => a.Status == StatusAgendamento.Pendente);
@@ -236,7 +319,7 @@ public partial class DashboardViewModel : ObservableObject
                 AtualizarHoverMes(8, _ultimaLarguraGrafico); // Destaque padrão em Setembro
             }
 
-            // 6. Top 5 Clientes formatados com iniciais e cores
+            // 6. Top 5 Clientes formatados com iniciais e cores a partir do RelatorioService
             var topRaw = await _relatorioService.ObterTopClientesAsync(5, AnoSelecionado);
             var avatarColors = new[] { "#FCE4EC", "#FFF3E0", "#E1F5FE", "#F3E5F5", "#E8F5E9" };
 
@@ -252,7 +335,7 @@ public partial class DashboardViewModel : ObservableObject
                     Posicao = (i + 1).ToString("D2"),
                     Iniciais = iniciais,
                     Nome = nome,
-                    AtendimentosTexto = $"{item.QuantidadeComandas} atendimentos",
+                    AtendimentosTexto = $"{item.QuantidadeComandas} atendimento{(item.QuantidadeComandas > 1 ? "s" : "")}",
                     TotalGastoTexto = item.TotalGasto.ToString("C2"),
                     AvatarBg = avatarColors[i % avatarColors.Length]
                 });
@@ -267,7 +350,17 @@ public partial class DashboardViewModel : ObservableObject
                 var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
-                var valorTotal = ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
+                var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0
+                    ? ag.Comanda.ValorTotal
+                    : ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
+
+                string statusFormatado = ag.Status switch
+                {
+                    StatusAgendamento.Pendente => "Agendado",
+                    StatusAgendamento.Concluido => "Concluído",
+                    StatusAgendamento.Cancelado => "Cancelado",
+                    _ => ag.Status.ToString()
+                };
 
                 agendaList.Add(new AgendaItemDashboard
                 {
@@ -278,19 +371,169 @@ public partial class DashboardViewModel : ObservableObject
                     Servicos = servicos,
                     Duracao = $"{ag.TempoTotalPrevistoMinutos} min",
                     Valor = valorTotal.ToString("C2"),
-                    Status = ag.Status == StatusAgendamento.Pendente ? "Agendado" : ag.Status.ToString()
+                    Status = statusFormatado
                 });
             }
             AgendaDoDia = agendaList;
         }
-        catch
+        catch (Exception ex)
         {
-            // Proteção contra quebras na renderização
+            System.Diagnostics.Debug.WriteLine($"[DashboardViewModel] Erro ao carregar dados: {ex}");
         }
         finally
         {
             Carregando = false;
         }
+    }
+
+    private static readonly string[] NomesMeses = 
+        { "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez" };
+    private static readonly string[] NomesMesesCompletos = 
+        { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" };
+
+    private void AtualizarGrafico(List<FaturamentoMensalDto> dados)
+    {
+        ColunasGrafico = dados.Count;
+        var maxValor = dados.Count > 0 ? dados.Max(d => d.Total) : 0m;
+        TemDadosNoGrafico = maxValor > 0;
+
+        decimal teto = CalcularTeto(maxValor);
+
+        // Labels do Eixo Y
+        YLabelMax = FormatarValorEixo(teto);
+        YLabel75 = FormatarValorEixo(teto * 0.75m);
+        YLabel50 = FormatarValorEixo(teto * 0.50m);
+        YLabel25 = FormatarValorEixo(teto * 0.25m);
+        YLabel0 = "R$ 0";
+
+        // Coordenadas de renderização no Viewbox (Width = 500, Height = 140)
+        // Baseline no Y = 125, topo da curva em Y = 12, altura útil = 113
+        const double baselineY = 125.0;
+        const double alturaUtil = 113.0;
+        const double margemEsquerda = 25.0;
+        const double larguraUtil = 450.0;
+
+        int n = dados.Count;
+        double stepX = n > 1 ? larguraUtil / (n - 1) : larguraUtil;
+
+        var pontos = new List<Point>();
+        var mesesItems = new List<ChartMesItem>();
+
+        for (int i = 0; i < n; i++)
+        {
+            var item = dados[i];
+            int mesIdx = Math.Clamp(item.Mes - 1, 0, 11);
+
+            double x = margemEsquerda + (i * stepX);
+            double ratio = teto > 0 ? (double)(item.Total / teto) : 0.0;
+            double y = baselineY - (ratio * alturaUtil);
+
+            pontos.Add(new Point(x, y));
+
+            mesesItems.Add(new ChartMesItem
+            {
+                Mes = item.Mes,
+                MesNome = NomesMeses[mesIdx],
+                Valor = item.Total,
+                ValorFormatado = item.Total.ToString("C2"),
+                TooltipTexto = $"{NomesMesesCompletos[mesIdx]}/{AnoSelecionado}: {item.Total:C2}",
+                X = x,
+                Y = y
+            });
+        }
+
+        ChartMeses = mesesItems;
+
+        var (linha, area) = GerarGeometriasGrafico(pontos, baselineY);
+        GraficoLinhaGeometry = linha;
+        GraficoAreaGeometry = area;
+    }
+
+    private static (Geometry Linha, Geometry Area) GerarGeometriasGrafico(List<Point> pontos, double baselineY)
+    {
+        if (pontos.Count == 0)
+        {
+            return (Geometry.Empty, Geometry.Empty);
+        }
+
+        var linhaFig = new PathFigure { StartPoint = pontos[0], IsClosed = false, IsFilled = false };
+        var areaFig = new PathFigure { StartPoint = new Point(pontos[0].X, baselineY), IsClosed = true, IsFilled = true };
+        areaFig.Segments.Add(new LineSegment(pontos[0], true));
+
+        if (pontos.Count == 1)
+        {
+            linhaFig.Segments.Add(new LineSegment(pontos[0], true));
+            areaFig.Segments.Add(new LineSegment(new Point(pontos[0].X, baselineY), true));
+        }
+        else
+        {
+            for (int i = 0; i < pontos.Count - 1; i++)
+            {
+                var p0 = i > 0 ? pontos[i - 1] : pontos[i];
+                var p1 = pontos[i];
+                var p2 = pontos[i + 1];
+                var p3 = (i + 2 < pontos.Count) ? pontos[i + 2] : p2;
+
+                // Catmull-Rom para Bezier Cúbica:
+                // CP1 = P1 + (P2 - P0) / 6
+                // CP2 = P2 - (P3 - P1) / 6
+                var cp1 = new Point(
+                    p1.X + (p2.X - p0.X) / 6.0,
+                    Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, 8.0, baselineY)
+                );
+                var cp2 = new Point(
+                    p2.X - (p3.X - p1.X) / 6.0,
+                    Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, 8.0, baselineY)
+                );
+
+                var bezier = new BezierSegment(cp1, cp2, p2, true);
+                linhaFig.Segments.Add(bezier);
+                areaFig.Segments.Add(bezier);
+            }
+
+            areaFig.Segments.Add(new LineSegment(new Point(pontos[^1].X, baselineY), true));
+        }
+
+        var linhaGeom = new PathGeometry();
+        linhaGeom.Figures.Add(linhaFig);
+        linhaGeom.Freeze();
+
+        var areaGeom = new PathGeometry();
+        areaGeom.Figures.Add(areaFig);
+        areaGeom.Freeze();
+
+        return (linhaGeom, areaGeom);
+    }
+
+    private static decimal CalcularTeto(decimal maxValor)
+    {
+        if (maxValor <= 0) return 1000m;
+        if (maxValor <= 500) return 500m;
+        if (maxValor <= 1000) return 1000m;
+        if (maxValor <= 2000) return 2000m;
+        if (maxValor <= 3000) return 3000m;
+        if (maxValor <= 5000) return 5000m;
+        if (maxValor <= 8000) return 8000m;
+        if (maxValor <= 10000) return 10000m;
+        if (maxValor <= 15000) return 15000m;
+        if (maxValor <= 20000) return 20000m;
+        if (maxValor <= 30000) return 30000m;
+        if (maxValor <= 50000) return 50000m;
+
+        return Math.Ceiling(maxValor / 10000m) * 10000m;
+    }
+
+    private static string FormatarValorEixo(decimal valor)
+    {
+        if (valor <= 0) return "R$ 0";
+        if (valor >= 1000)
+        {
+            var mil = valor / 1000m;
+            return mil % 1 == 0 
+                ? $"{mil:0} mil" 
+                : $"{mil:0.#} mil";
+        }
+        return valor.ToString("C0");
     }
 
     private static string ObterIniciais(string nome)
@@ -301,6 +544,17 @@ public partial class DashboardViewModel : ObservableObject
         return $"{partes[0][0]}{partes[^1][0]}".ToUpper();
     }
 
+    // Comandos de Navegação de Datas
+    [RelayCommand]
+    public void IrParaDiaAnterior() => DataSelecionada = DataSelecionada.AddDays(-1);
+
+    [RelayCommand]
+    public void IrParaProximoDia() => DataSelecionada = DataSelecionada.AddDays(1);
+
+    [RelayCommand]
+    public void IrParaHoje() => DataSelecionada = DateTime.Today;
+
+    // Comandos de Navegação Entre Telas
     [RelayCommand]
     public void IrParaAgenda() => NavigationRequested?.Invoke("Agendamentos");
 

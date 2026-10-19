@@ -10,7 +10,8 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 
 ### 👤 1. Módulo de Clientes
 - **Cadastro Completo:** Registro de Nome, **Apelido (opcional)**, Telefone/WhatsApp, E-mail, Observações e Data de Cadastro.
-- **Busca Rápida:** Filtragem inteligente por nome, apelido, telefone ou e-mail.
+- **Validação e Máscara em Tempo Real:** Validação rigorosa de nome, telefone com DDD e e-mail. Máscara automática interativa de telefone `(XX) XXXXX-XXXX` aplicada dinamicamente conforme o usuário digita, bloqueando caracteres não numéricos.
+- **Busca Rápida:** Filtragem inteligente por nome, apelido, telefone (formatado ou apenas dígitos) ou e-mail.
 - **Histórico Consolidado:** Consulta do histórico completo de atendimentos, agendamentos e comandas de cada cliente.
 - **Soft Delete:** Exclusão lógica com data (`DeletedAt`), garantindo que o histórico contábil e as comandas passadas permaneçam íntegras.
 
@@ -46,6 +47,12 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 - **Faturamento Mensal:** Gráfico dos 12 meses do ano com filtro interativo por ano.
 - **Top 5 Clientes:** Ranking dos clientes que mais gastaram no salão.
 - **Métricas do Período:** Total de receita e número de atendimentos concluídos.
+
+### 🛡️ 7. Validação de Dados e Máscaras Automáticas em Tempo Real
+- **Validação em Dupla Camada (Defense-in-Depth):** Todo dado é validado no ViewModel (para feedback amigável imediato) e nos Services (para garantia absoluta de integridade).
+- **Máscaras Dinâmicas em Tempo Real:** Formatação instantânea de campos conforme a digitação do usuário (telefone celular `(XX) XXXXX-XXXX`, CPF `XXX.XXX.XXX-XX`, etc.).
+- **Bloqueio de Caracteres Inválidos:** Comportamento anexado XAML intercepta digitações e colagens (`Ctrl+V`), impedindo a entrada de caracteres não permitidos.
+- **Sanitização Automática:** Remoção de espaços espúrios, verificação de DDD e números de dígitos, e validação de e-mails de acordo com padrões modernos.
 
 ---
 

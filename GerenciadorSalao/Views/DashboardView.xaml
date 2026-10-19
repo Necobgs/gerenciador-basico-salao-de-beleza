@@ -4,10 +4,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:vm="clr-namespace:GerenciadorSalao.ViewModels"
+             d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="1200" d:DesignWidth="1100">
 
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
         <!-- Estilo ComboBox em Pílula (Ano completo ▾ / 2026 ▾) -->
         <ControlTemplate x:Key="ComboBoxToggleButtonTemplate" TargetType="ToggleButton">
             <Border x:Name="Border"
@@ -230,7 +234,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- 1. Header da Página -->
                 <RowDefinition Height="Auto"/> <!-- 2. Quatro Cards de Métricas -->
-                <RowDefinition Height="Auto"/> <!-- 3. Faturamento (Gráfico) + Clientes Especiais (Top 5) -->
+                <RowDefinition Height="Auto"/> <!-- 3. Faturamento (Gráfico Dinâmico) + Clientes Especiais (Top 5) -->
                 <RowDefinition Height="Auto"/> <!-- 4. Agenda do Dia (Tabela) -->
             </Grid.RowDefinitions>
 
@@ -257,7 +261,7 @@
                                Margin="0,3,0,0"/>
                 </StackPanel>
 
-                <!-- Ações do Topo: Data e Novo Agendamento -->
+                <!-- Ações do Topo: Navegação de Datas, Recarregar e Novo Agendamento -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Seletor de Data com Calendário Dropdown -->
                     <Grid Margin="0,0,10,0">
@@ -472,7 +476,7 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="Faturamento do dia" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TituloFaturamentoDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
                             <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="Wallet24" FontSize="17" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
@@ -487,7 +491,7 @@
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal">
                             <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Text="{Binding ComandasFinalizadasHoje}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="{Binding ComandasFinalizadasHoje}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
                             <TextBlock Text=" comandas finalizadas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
                         </StackPanel>
                     </Grid>
@@ -542,7 +546,7 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="Agendamentos hoje" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TituloAgendamentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
                             <Border Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="17" Foreground="#2E7D32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
@@ -557,7 +561,7 @@
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal">
                             <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Text="{Binding AgendamentosPendentesHoje}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="{Binding AgendamentosPendentesHoje}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
                             <TextBlock Text=" aguardando atendimento" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
                         </StackPanel>
                     </Grid>
@@ -597,14 +601,14 @@
                 </Border>
             </Grid>
 
-            <!-- ===================== 3. FATURAMENTO (GRÁFICO) + CLIENTES ESPECIAIS (TOP 5) ===================== -->
+            <!-- ===================== 3. FATURAMENTO (GRÁFICO DINÂMICO) + CLIENTES ESPECIAIS (TOP 5) ===================== -->
             <Grid Grid.Row="2" Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.4*"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- CARD ESQUERDA: FATURAMENTO ANUAL COM GRÁFICO -->
+                <!-- CARD ESQUERDA: FATURAMENTO REAL COM GRÁFICO DINÂMICO -->
                 <Border Grid.Column="0" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
@@ -616,7 +620,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Título & Filtros -->
                             <RowDefinition Height="Auto"/> <!-- Valor Acumulado & Legenda -->
-                            <RowDefinition Height="Auto"/> <!-- Gráfico Visual -->
+                            <RowDefinition Height="Auto"/> <!-- Gráfico Visual Dinâmico -->
+                            <RowDefinition Height="Auto"/> <!-- Labels dos Meses (Eixo X) -->
                             <RowDefinition Height="Auto"/> <!-- Rodapé -->
                         </Grid.RowDefinitions>
 
@@ -627,7 +632,7 @@
                                 <TextBlock Text="Uma visão dos resultados do seu salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
 
-                            <!-- Filtros (Ano completo e Ano) -->
+                            <!-- Filtros (Ano completo / Semestre e Ano) -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <ComboBox Style="{StaticResource PillComboBoxStyle}"
                                           ItemsSource="{Binding PeriodosDisponiveis}"
@@ -639,7 +644,7 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Valor Acumulado e Tag -->
+                        <!-- Valor Acumulado e Tag Dinâmica -->
                         <Grid Grid.Row="1" Margin="0,0,0,14">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding FaturamentoAcumuladoAno, StringFormat='{}{0:C2}'}" 
@@ -841,7 +846,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Header -->
-                            <RowDefinition Height="*"/>    <!-- Lista Top 5 -->
+                            <RowDefinition Height="*"/>    <!-- Lista Top 5 ou Empty State -->
                             <RowDefinition Height="Auto"/> <!-- Rodapé -->
                         </Grid.RowDefinitions>
 
@@ -863,8 +868,8 @@
                             </Border>
                         </Grid>
 
-                        <!-- Lista dos 5 Clientes -->
-                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopClientes}">
+                        <!-- Lista dos 5 Clientes quando existem dados -->
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopClientes}" Visibility="{Binding TemTopClientes, Converter={StaticResource BoolToVis}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="{StaticResource BrushBorder}" 
@@ -920,6 +925,24 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
+                        <!-- Estado Vazio quando não há clientes finalizados no período -->
+                        <Border Grid.Row="1" 
+                                Background="{StaticResource BrushBackground}" 
+                                BorderBrush="{StaticResource BrushBorder}" 
+                                BorderThickness="1" 
+                                CornerRadius="8" 
+                                Padding="20,24" 
+                                Margin="0,8"
+                                Visibility="{Binding SemTopClientes, Converter={StaticResource BoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Center" Margin="0,0,0,10">
+                                    <ui:SymbolIcon Symbol="PeopleStar24" FontSize="20" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Nenhum atendimento finalizado" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Finalize comandas no ano selecionado para visualizar o ranking." FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Rodapé: Ver todos os clientes -->
                         <Button Grid.Row="2" 
                                 Command="{Binding IrParaClientesCommand}" 
@@ -949,13 +972,13 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/> <!-- Título & Link -->
                         <RowDefinition Height="Auto"/> <!-- Cabeçalho da Tabela -->
-                        <RowDefinition Height="*"/>    <!-- Linhas da Tabela -->
+                        <RowDefinition Height="*"/>    <!-- Linhas da Tabela ou Empty State -->
                     </Grid.RowDefinitions>
 
                     <!-- Cabeçalho do Card Agenda do Dia -->
                     <Grid Grid.Row="0" Margin="0,0,0,14">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="Agenda do dia" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding TituloAgendaTabela}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,8,0"/>
                             <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding AgendamentosHoje}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
                             </Border>
@@ -973,8 +996,13 @@
                         </Button>
                     </Grid>
 
-                    <!-- Cabeçalho das Colunas da Tabela -->
-                    <Border Grid.Row="1" Background="#FAF9F8" CornerRadius="6" Padding="12,8" Margin="0,0,0,4">
+                    <!-- Cabeçalho das Colunas da Tabela (visível quando existem agendamentos) -->
+                    <Border Grid.Row="1" 
+                            Background="#FAF9F8" 
+                            CornerRadius="6" 
+                            Padding="12,8" 
+                            Margin="0,0,0,4"
+                            Visibility="{Binding TemAgendamentos, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="65"/>  <!-- Horário -->
@@ -995,8 +1023,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- Lista de Agendamentos -->
-                    <ItemsControl Grid.Row="2" ItemsSource="{Binding AgendaDoDia}">
+                    <!-- Lista de Agendamentos Reais do Dia -->
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding AgendaDoDia}" Visibility="{Binding TemAgendamentos, Converter={StaticResource BoolToVis}}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border BorderBrush="{StaticResource BrushBorder}" 
@@ -1039,7 +1067,7 @@
                                                    Text="{Binding Servicos}" 
                                                    FontSize="12" 
                                                    Foreground="{StaticResource BrushTextSecondary}" 
-                                                   VerticalAlignment="Center"
+                                                   VerticalAlignment="Center" 
                                                    TextTrimming="CharacterEllipsis"/>
 
                                         <!-- Duração com Ícone de Relógio -->
@@ -1076,6 +1104,41 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- Estado Vazio quando não há agendamentos no dia -->
+                    <Border Grid.Row="2" 
+                            Background="{StaticResource BrushBackground}" 
+                            BorderBrush="{StaticResource BrushBorder}" 
+                            BorderThickness="1" 
+                            CornerRadius="8" 
+                            Padding="32,28" 
+                            Margin="0,8,0,0"
+                            Visibility="{Binding SemAgendamentos, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Center" Margin="0,0,0,12">
+                                <ui:SymbolIcon Symbol="CalendarClock24" FontSize="22" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Nenhum agendamento para este dia" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Você pode navegar pelas datas no topo ou marcar um novo atendimento para esta data." FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="0,4,0,16" HorizontalAlignment="Center"/>
+                            <Button Command="{Binding NovoAgendamentoCommand}"
+                                    Background="{StaticResource BrushPrimary}"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Padding="14,8"
+                                    Cursor="Hand"
+                                    HorizontalAlignment="Center">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6"/>
+                                    </Style>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="Add24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Agendar novo horário" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

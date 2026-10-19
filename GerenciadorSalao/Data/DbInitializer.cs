@@ -33,10 +33,8 @@ public static class DbInitializer
         {
             var produtosIniciais = new List<Produto>
             {
-                new() { Descricao = "Shampoo Hidratante 300ml", Valor = 55.00m, Estoque = 15, Ativo = true },
-                new() { Descricao = "Condicionador Reconstrutor 300ml", Valor = 58.00m, Estoque = 12, Ativo = true },
-                new() { Descricao = "Óleo Reparador de Pontas 60ml", Valor = 42.00m, Estoque = 20, Ativo = true },
-                new() { Descricao = "Máscara Capilar Nutritiva 250g", Valor = 75.00m, Estoque = 8, Ativo = true }
+                new() { Descricao = "Shampoo nutritivo", Valor = 89.00m, Estoque = 15, Ativo = true },
+                new() { Descricao = "Máscara de hidratação", Valor = 129.00m, Estoque = 8, Ativo = true }
             };
 
             context.Produtos.AddRange(produtosIniciais);

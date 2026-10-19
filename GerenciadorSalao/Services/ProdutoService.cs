@@ -1,4 +1,5 @@
 using GerenciadorSalao.Data;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,12 +14,18 @@ public class ProdutoService : IProdutoService
         _context = context;
     }
 
-    public async Task<List<Produto>> ObterTodosAsync(bool apenasAtivos = true)
+    public async Task<List<Produto>> ObterTodosAsync(string? termoBusca = null, bool apenasAtivos = true)
     {
         var query = _context.Produtos.AsNoTracking().AsQueryable();
 
         if (apenasAtivos)
             query = query.Where(p => p.Ativo);
+
+        if (!string.IsNullOrWhiteSpace(termoBusca))
+        {
+            var termo = termoBusca.Trim().ToLower();
+            query = query.Where(p => p.Descricao.ToLower().Contains(termo));
+        }
 
         return await query.OrderBy(p => p.Descricao).ToListAsync();
     }
@@ -32,12 +39,13 @@ public class ProdutoService : IProdutoService
 
     public async Task<Produto> AdicionarAsync(Produto produto)
     {
-        if (string.IsNullOrWhiteSpace(produto.Descricao))
-            throw new ArgumentException("A descrição do produto é obrigatória.", nameof(produto.Descricao));
+        if (!ValidationHelper.ValidarDescricaoProduto(produto.Descricao, out var erroDesc))
+            throw new ArgumentException(erroDesc, nameof(produto.Descricao));
 
         if (produto.Valor < 0)
             throw new ArgumentException("O valor do produto não pode ser negativo.", nameof(produto.Valor));
 
+        produto.Descricao = produto.Descricao.Trim();
         _context.Produtos.Add(produto);
         await _context.SaveChangesAsync();
         return produto;
@@ -45,8 +53,8 @@ public class ProdutoService : IProdutoService
 
     public async Task AtualizarAsync(Produto produto)
     {
-        if (string.IsNullOrWhiteSpace(produto.Descricao))
-            throw new ArgumentException("A descrição do produto é obrigatória.", nameof(produto.Descricao));
+        if (!ValidationHelper.ValidarDescricaoProduto(produto.Descricao, out var erroDesc))
+            throw new ArgumentException(erroDesc, nameof(produto.Descricao));
 
         if (produto.Valor < 0)
             throw new ArgumentException("O valor do produto não pode ser negativo.", nameof(produto.Valor));
