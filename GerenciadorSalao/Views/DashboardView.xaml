@@ -28,24 +28,23 @@
                     <ContentPresenter Grid.Column="0"
                                       Content="{TemplateBinding Content}"
                                       ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
                                       VerticalAlignment="Center"
-                                      HorizontalAlignment="Left"
-                                      Margin="0,0,8,0"/>
-                    <TextBlock Grid.Column="1"
-                               Text="▾"
-                               FontSize="10"
-                               Foreground="{StaticResource BrushTextSecondary}"
-                               VerticalAlignment="Center"/>
+                                      Margin="0,0,6,0"/>
+                    <ui:SymbolIcon Grid.Column="1" 
+                                   Symbol="ChevronDown24" 
+                                   FontSize="12" 
+                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                   VerticalAlignment="Center"/>
                 </Grid>
             </Border>
             <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
-                    <Setter TargetName="Border" Property="Background" Value="#FAF8F7"/>
+                    <Setter TargetName="Border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
                 </Trigger>
                 <Trigger Property="IsChecked" Value="True">
                     <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
-                    <Setter TargetName="Border" Property="Background" Value="#FAF8F7"/>
                 </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -86,7 +85,7 @@
                                         BorderThickness="1"
                                         CornerRadius="8"
                                         MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                        MaxHeight="200"
+                                        MaxHeight="360"
                                         Padding="4"
                                         SnapsToDevicePixels="True">
                                     <Border.Effect>
@@ -124,8 +123,8 @@
                                             <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
-                                            <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
+                                            <Setter TargetName="ItemBorder" Property="Background" Value="#66605E"/>
+                                            <Setter Property="Foreground" Value="White"/>
                                             <Setter Property="FontWeight" Value="SemiBold"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
@@ -137,21 +136,122 @@
             </Setter>
         </Style>
 
-        <!-- Botão sutil circular / ícone -->
+        <!-- Botão sutil circular / ícone do Header -->
         <Style x:Key="HeaderNavIconButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource BrushSurface}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Width" Value="34"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo do Botão Primário (+ Novo agendamento) com Hover Elegante Terracota/Café -->
+        <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="{StaticResource BrushPrimary}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                              VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushPrimaryHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#553732"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo dos Botões de Navegação do Mês no Calendário (↑ / ↓) -->
+        <Style x:Key="CalendarNavButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#F5F2F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Estilo dos Botões de Ação de Texto (Limpar / Hoje) -->
+        <Style x:Key="FlatActionButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" Padding="6,4" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushInfoSubtle}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -192,74 +292,196 @@
                                Margin="0,3,0,0"/>
                 </StackPanel>
 
-                <!-- Ações do Topo: Navegação de Datas, Recarregar e Novo Agendamento -->
+                <!-- Ações do Topo: Data com Calendário Dropdown, Recarregar e Novo Agendamento -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Seletor de Data com Navegação Anterior/Próximo -->
-                    <Border Background="{StaticResource BrushSurface}"
-                            BorderBrush="{StaticResource BrushBorder}"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Padding="6,4"
+                    <!-- Seletor de Data com Calendário Dropdown -->
+                    <Grid Margin="0,0,10,0">
+                        <ToggleButton x:Name="btnDatePicker"
+                                      IsChecked="{Binding IsCalendarOpen, Mode=TwoWay}"
+                                      FocusVisualStyle="{x:Null}"
+                                      Cursor="Hand"
+                                      OverridesDefaultStyle="True">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border x:Name="btnBorder"
+                                            Background="{StaticResource BrushSurface}"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Padding="12,8">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DataHojeFormatada}" 
+                                                       FontSize="12" 
+                                                       FontWeight="Medium" 
+                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0"/>
+                                            <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FAF8F7"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="btnBorder" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                                            <Setter TargetName="btnBorder" Property="Background" Value="#FAF8F7"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+
+                        <!-- Popup do Calendário Suspenso -->
+                        <Popup Placement="Bottom"
+                               PlacementTarget="{Binding ElementName=btnDatePicker}"
+                               IsOpen="{Binding IsCalendarOpen, Mode=TwoWay}"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade"
+                               VerticalOffset="6">
+                            <Border Background="{StaticResource BrushSurface}"
+                                    BorderBrush="{StaticResource BrushBorder}"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="16"
+                                    Width="260"
+                                    SnapsToDevicePixels="True">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.12" Color="#34302F"/>
+                                </Border.Effect>
+
+                                <StackPanel>
+                                    <!-- Cabeçalho do Mês / Ano e Navegação (↑ / ↓) -->
+                                    <Grid Margin="2,0,2,12">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding MesVisualizadoTexto}" 
+                                                       FontSize="13" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text=" ▾" 
+                                                       FontSize="10" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center" 
+                                                       Margin="2,0,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                            <Button Command="{Binding MesAnteriorCommand}"
+                                                    ToolTip="Mês anterior"
+                                                    Style="{StaticResource CalendarNavButtonStyle}"
+                                                    Margin="0,0,2,0">
+                                                <ui:SymbolIcon Symbol="ArrowUp24" FontSize="13" Foreground="{StaticResource BrushTextPrimary}"/>
+                                            </Button>
+                                            <Button Command="{Binding MesProximoCommand}"
+                                                    ToolTip="Próximo mês"
+                                                    Style="{StaticResource CalendarNavButtonStyle}">
+                                                <ui:SymbolIcon Symbol="ArrowDown24" FontSize="13" Foreground="{StaticResource BrushTextPrimary}"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Cabeçalho dos Dias da Semana: D S T Q Q S S -->
+                                    <UniformGrid Columns="7" Margin="0,0,0,8">
+                                        <TextBlock Text="D" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="T" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Q" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Q" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="S" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                    </UniformGrid>
+
+                                    <!-- Grade de Dias do Mês (6 semanas x 7 dias = 42 células) -->
+                                    <ItemsControl ItemsSource="{Binding DiasCalendario}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <UniformGrid Columns="7" Rows="6"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Command="{Binding DataContext.SelecionarDataCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding Data}"
+                                                        FocusVisualStyle="{x:Null}"
+                                                        Cursor="Hand"
+                                                        Margin="0,2"
+                                                        OverridesDefaultStyle="True">
+                                                    <Button.Template>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border x:Name="dayBorder"
+                                                                    Width="28" Height="28"
+                                                                    CornerRadius="4"
+                                                                    Background="Transparent"
+                                                                    HorizontalAlignment="Center"
+                                                                    VerticalAlignment="Center">
+                                                                <TextBlock x:Name="dayText"
+                                                                           Text="{Binding Dia}"
+                                                                           FontSize="12"
+                                                                           HorizontalAlignment="Center"
+                                                                           VerticalAlignment="Center"
+                                                                           Foreground="{StaticResource BrushTextPrimary}"/>
+                                                            </Border>
+                                                            <ControlTemplate.Triggers>
+                                                                <DataTrigger Binding="{Binding IsMesAtual}" Value="False">
+                                                                    <Setter TargetName="dayText" Property="Foreground" Value="#A8A29E"/>
+                                                                </DataTrigger>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                                                                        <Condition Binding="{Binding IsSelecionado}" Value="False"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter TargetName="dayBorder" Property="Background" Value="#F5F2F0"/>
+                                                                </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding IsSelecionado}" Value="True">
+                                                                    <Setter TargetName="dayBorder" Property="Background" Value="#504746"/>
+                                                                    <Setter TargetName="dayText" Property="Foreground" Value="White"/>
+                                                                    <Setter TargetName="dayText" Property="FontWeight" Value="SemiBold"/>
+                                                                </DataTrigger>
+                                                            </ControlTemplate.Triggers>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Linha de Ações Inferior: Limpar e Hoje -->
+                                    <Grid Margin="2,14,2,2">
+                                        <Button Command="{Binding LimparDataCommand}"
+                                                Content="Limpar"
+                                                FontSize="12"
+                                                FontWeight="Medium"
+                                                Foreground="{StaticResource BrushTextSecondary}"
+                                                HorizontalAlignment="Left"
+                                                Style="{StaticResource FlatActionButtonStyle}"/>
+
+                                        <Button Command="{Binding HojeDataCommand}"
+                                                Content="Hoje"
+                                                FontSize="12"
+                                                FontWeight="Medium"
+                                                Foreground="{StaticResource BrushInfo}"
+                                                HorizontalAlignment="Right"
+                                                Style="{StaticResource FlatActionButtonStyle}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <!-- Botão de Atualização Manual dos Dados -->
+                    <Button Style="{StaticResource HeaderNavIconButtonStyle}"
+                            Command="{Binding CarregarDadosCommand}"
+                            ToolTip="Atualizar dados agora"
                             Margin="0,0,10,0">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <!-- Dia Anterior -->
-                            <Button Style="{StaticResource HeaderNavIconButtonStyle}"
-                                    Command="{Binding IrParaDiaAnteriorCommand}"
-                                    ToolTip="Dia anterior">
-                                <ui:SymbolIcon Symbol="ChevronLeft24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </Button>
-
-                            <!-- Data Exibida -->
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,6,0">
-                                <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="14" Foreground="{StaticResource BrushPrimary}" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding DataHojeFormatada}" 
-                                           FontSize="12" 
-                                           FontWeight="SemiBold" 
-                                           Foreground="{StaticResource BrushTextPrimary}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-
-                            <!-- Próximo Dia -->
-                            <Button Style="{StaticResource HeaderNavIconButtonStyle}"
-                                    Command="{Binding IrParaProximoDiaCommand}"
-                                    ToolTip="Próximo dia">
-                                <ui:SymbolIcon Symbol="ChevronRight24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </Button>
-
-                            <!-- Botão Hoje se não estiver na data atual -->
-                            <Button Style="{StaticResource HeaderNavIconButtonStyle}"
-                                    Command="{Binding IrParaHojeCommand}"
-                                    ToolTip="Voltar para a data de hoje"
-                                    Margin="4,0,2,0">
-                                <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="6,2">
-                                    <TextBlock Text="Hoje" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                                </Border>
-                            </Button>
-
-                            <!-- Separador -->
-                            <Rectangle Width="1" Height="18" Fill="{StaticResource BrushBorder}" Margin="6,0,6,0"/>
-
-                            <!-- Botão de Atualização Manual dos Dados -->
-                            <Button Style="{StaticResource HeaderNavIconButtonStyle}"
-                                    Command="{Binding CarregarDadosCommand}"
-                                    ToolTip="Atualizar dados agora">
-                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </Button>
-                        </StackPanel>
-                    </Border>
+                        <ui:SymbolIcon Symbol="ArrowSync24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}"/>
+                    </Button>
 
                     <!-- Botão Novo Agendamento -->
                     <Button Command="{Binding NovoAgendamentoCommand}"
-                            Background="{StaticResource BrushPrimary}"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Padding="14,9"
-                            Cursor="Hand">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
+                            Style="{StaticResource PrimaryActionButtonStyle}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                             <TextBlock Text="Novo agendamento" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
@@ -277,14 +499,14 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Card 1: Faturamento do dia -->
+                <!-- CARD 1: FATURAMENTO DE HOJE -->
                 <Border Grid.Column="0" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
                         BorderThickness="1" 
-                        CornerRadius="10" 
-                        Padding="16,16" 
-                        Margin="0,0,6,0">
+                        CornerRadius="12" 
+                        Padding="18,16" 
+                        Margin="0,0,8,0">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -304,7 +526,7 @@
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,10,0,4"/>
+                                   Margin="0,6,0,8"/>
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal">
                             <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
@@ -314,13 +536,13 @@
                     </Grid>
                 </Border>
 
-                <!-- Card 2: Comandas abertas -->
+                <!-- CARD 2: COMANDAS EM ABERTO -->
                 <Border Grid.Column="1" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
                         BorderThickness="1" 
-                        CornerRadius="10" 
-                        Padding="16,16" 
+                        CornerRadius="12" 
+                        Padding="18,16" 
                         Margin="4,0,4,0">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -331,29 +553,41 @@
 
                         <Grid Grid.Row="0">
                             <TextBlock Text="Comandas abertas" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Right">
-                                <ui:SymbolIcon Symbol="ClipboardTextEdit24" FontSize="17" Foreground="{StaticResource BrushSecondary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="#FFF3E0" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="Receipt24" FontSize="17" Foreground="#E65100" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
 
                         <TextBlock Grid.Row="1" 
-                                   Text="{Binding ComandasAbertas, StringFormat='{}{0:D2}'}" 
+                                   Text="{Binding ComandasAbertas}" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,10,0,4"/>
+                                   Margin="0,6,0,8"/>
 
-                        <TextBlock Grid.Row="2" Text="• Atendimentos em andamento" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                        <Button Grid.Row="2" 
+                                Command="{Binding IrParaComandasCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Padding="0" 
+                                Cursor="Hand" 
+                                HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushSecondary}"/>
+                                <TextBlock Text="em atendimento agora" FontSize="11" Foreground="{StaticResource BrushSecondary}"/>
+                                <ui:SymbolIcon Symbol="ChevronRight24" FontSize="11" Foreground="{StaticResource BrushSecondary}" Margin="2,1,0,0"/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
                 </Border>
 
-                <!-- Card 3: Agendamentos hoje -->
+                <!-- CARD 3: AGENDAMENTOS HOJE -->
                 <Border Grid.Column="2" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
                         BorderThickness="1" 
-                        CornerRadius="10" 
-                        Padding="16,16" 
+                        CornerRadius="12" 
+                        Padding="18,16" 
                         Margin="4,0,4,0">
                     <Grid>
                         <Grid.RowDefinitions>
@@ -370,11 +604,11 @@
                         </Grid>
 
                         <TextBlock Grid.Row="1" 
-                                   Text="{Binding AgendamentosHoje, StringFormat='{}{0:D2}'}" 
+                                   Text="{Binding AgendamentosHoje}" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,10,0,4"/>
+                                   Margin="0,6,0,8"/>
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal">
                             <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
@@ -384,14 +618,14 @@
                     </Grid>
                 </Border>
 
-                <!-- Card 4: Clientes cadastrados -->
+                <!-- CARD 4: TOTAL DE CLIENTES -->
                 <Border Grid.Column="3" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
                         BorderThickness="1" 
-                        CornerRadius="10" 
-                        Padding="16,16" 
-                        Margin="6,0,0,0">
+                        CornerRadius="12" 
+                        Padding="18,16" 
+                        Margin="8,0,0,0">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -400,20 +634,32 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="Clientes cadastrados" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="#E3F2FD" HorizontalAlignment="Right">
-                                <ui:SymbolIcon Symbol="People24" FontSize="17" Foreground="#1565C0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="Total de clientes" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="#E1F5FE" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="People24" FontSize="17" Foreground="#0277BD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
 
                         <TextBlock Grid.Row="1" 
-                                   Text="{Binding TotalClientes, StringFormat='{}{0:D2}'}" 
+                                   Text="{Binding TotalClientes}" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,10,0,4"/>
+                                   Margin="0,6,0,8"/>
 
-                        <TextBlock Grid.Row="2" Text="• Conexões que fazem a diferença" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                        <Button Grid.Row="2" 
+                                Command="{Binding IrParaClientesCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Padding="0" 
+                                Cursor="Hand" 
+                                HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushSecondary}"/>
+                                <TextBlock Text="cadastrados na base" FontSize="11" Foreground="{StaticResource BrushSecondary}"/>
+                                <ui:SymbolIcon Symbol="ChevronRight24" FontSize="11" Foreground="{StaticResource BrushSecondary}" Margin="2,1,0,0"/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
                 </Border>
             </Grid>
@@ -432,7 +678,7 @@
                         BorderThickness="1" 
                         CornerRadius="12" 
                         Padding="22,18" 
-                        Margin="0,0,8,0">
+                        Margin="0,0,6,0">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Título & Filtros -->
@@ -443,7 +689,7 @@
                         </Grid.RowDefinitions>
 
                         <!-- Cabeçalho do Card Faturamento -->
-                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
                             <StackPanel>
                                 <TextBlock Text="Faturamento" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
                                 <TextBlock Text="Uma visão dos resultados do seu salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
@@ -595,21 +841,33 @@
                         </ItemsControl>
 
                         <!-- Rodapé do Card Faturamento -->
-                        <Grid Grid.Row="4" Margin="0,10,0,0">
-                            <Border Height="1" Background="{StaticResource BrushBorder}" VerticalAlignment="Top" Margin="0,0,0,10"/>
-                            <TextBlock Text="Considera apenas comandas pagas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom"/>
-                            <Button HorizontalAlignment="Right" 
-                                    Command="{Binding IrParaRelatoriosCommand}" 
-                                    Background="Transparent" 
-                                    BorderThickness="0" 
-                                    Padding="0" 
-                                    Cursor="Hand"
-                                    VerticalAlignment="Bottom">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                                    <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="11" Foreground="{StaticResource BrushPrimary}" Margin="4,2,0,0"/>
-                                </StackPanel>
-                            </Button>
+                        <Grid Grid.Row="4" Margin="-22,14,-22,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/> <!-- Linha Divisória de ponta a ponta -->
+                                <RowDefinition Height="Auto"/> <!-- Textos e Botão -->
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Height="1" Background="{StaticResource BrushBorder}"/>
+
+                            <Grid Grid.Row="1" Margin="22,12,22,0">
+                                <TextBlock Text="Considera apenas comandas pagas" 
+                                           FontSize="11" 
+                                           Foreground="{StaticResource BrushTextSecondary}" 
+                                           VerticalAlignment="Center"/>
+
+                                <Button HorizontalAlignment="Right" 
+                                        VerticalAlignment="Center"
+                                        Command="{Binding IrParaRelatoriosCommand}" 
+                                        Background="Transparent" 
+                                        BorderThickness="0" 
+                                        Padding="0" 
+                                        Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}" VerticalAlignment="Center"/>
+                                        <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="12" Foreground="{StaticResource BrushPrimary}" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
                         </Grid>
                     </Grid>
                 </Border>
@@ -728,7 +986,7 @@
                                 Background="Transparent" 
                                 BorderThickness="0" 
                                 Padding="0" 
-                                Cursor="Hand"
+                                Cursor="Hand" 
                                 HorizontalAlignment="Right"
                                 Margin="0,12,0,0">
                             <StackPanel Orientation="Horizontal">

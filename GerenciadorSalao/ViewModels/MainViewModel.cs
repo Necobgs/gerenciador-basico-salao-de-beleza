@@ -20,6 +20,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _salaoNome = "Karla Borges";
 
+    [ObservableProperty]
+    private bool _isSidebarOpen = true;
+
+    [RelayCommand]
+    public void ToggleSidebar()
+    {
+        IsSidebarOpen = !IsSidebarOpen;
+    }
+
     public MainViewModel(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
@@ -45,7 +54,9 @@ public partial class MainViewModel : ObservableObject
                 break;
             case "Agendamentos":
                 CurrentPageTitle = "Agenda";
-                CurrentView = _serviceProvider.GetRequiredService<AgendamentosViewModel>();
+                var agendamentosVm = _serviceProvider.GetRequiredService<AgendamentosViewModel>();
+                agendamentosVm.NavigationRequested = Navigate;
+                CurrentView = agendamentosVm;
                 break;
             case "Clientes":
                 CurrentPageTitle = "Clientes";

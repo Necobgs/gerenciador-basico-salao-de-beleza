@@ -78,6 +78,18 @@ public partial class DashboardViewModel : ObservableObject
     private DateTime _dataSelecionada = DateTime.Today;
 
     [ObservableProperty]
+    private DateTime _mesVisualizado = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    [ObservableProperty]
+    private string _mesVisualizadoTexto = string.Empty;
+
+    [ObservableProperty]
+    private bool _isCalendarOpen;
+
+    [ObservableProperty]
+    private List<CalendarDayItem> _diasCalendario = new();
+
+    [ObservableProperty]
     private string _periodoSelecionado = "Ano completo";
 
     [ObservableProperty]
@@ -97,7 +109,21 @@ public partial class DashboardViewModel : ObservableObject
 
     partial void OnPeriodoSelecionadoChanged(string value) => _ = CarregarDadosAsync();
     partial void OnAnoSelecionadoChanged(int value) => _ = CarregarDadosAsync();
-    partial void OnDataSelecionadaChanged(DateTime value) => _ = CarregarDadosAsync();
+
+    partial void OnDataSelecionadaChanged(DateTime value)
+    {
+        AtualizarDiasCalendario();
+        _ = CarregarDadosAsync();
+    }
+
+    partial void OnIsCalendarOpenChanged(bool value)
+    {
+        if (value)
+        {
+            MesVisualizado = new DateTime(DataSelecionada.Year, DataSelecionada.Month, 1);
+            AtualizarDiasCalendario();
+        }
+    }
 
     [ObservableProperty]
     private bool _carregando;
@@ -167,6 +193,9 @@ public partial class DashboardViewModel : ObservableObject
         _comandaService = comandaService;
         _clienteService = clienteService;
 
+        MesVisualizado = new DateTime(DataSelecionada.Year, DataSelecionada.Month, 1);
+        AtualizarDiasCalendario();
+
         _ = CarregarDadosAsync();
     }
 
@@ -193,8 +222,7 @@ public partial class DashboardViewModel : ObservableObject
             foreach (var c in todasComandas)
             {
                 var dt = c.DataFechamento ?? c.DataAbertura;
-                if (dt.Year > 2000 && dt.Year < 2100)
-                    anosSet.Add(dt.Year);
+                anosSet.Add(dt.Year);
             }
             var anosOrdenados = anosSet.Reverse().ToList();
             if (!AnosDisponiveis.SequenceEqual(anosOrdenados))
@@ -263,11 +291,11 @@ public partial class DashboardViewModel : ObservableObject
             }
             TopClientes = topList;
 
-            // 7. Lista da Agenda do Dia
+            // 7. Lista detalhada de agendamentos reais do dia selecionado
             var agendaList = new List<AgendaItemDashboard>();
-            foreach (var ag in agendamentosHojeLista)
+            foreach (var ag in agendamentosHojeLista.OrderBy(a => a.DataHora))
             {
-                var nomeCli = ag.Cliente?.Nome ?? "Cliente";
+                var nomeCli = ag.Cliente?.Nome ?? "Cliente avulso";
                 var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
@@ -463,6 +491,69 @@ public partial class DashboardViewModel : ObservableObject
         var partes = nome.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (partes.Length == 1) return partes[0].Substring(0, Math.Min(2, partes[0].Length)).ToUpper();
         return $"{partes[0][0]}{partes[^1][0]}".ToUpper();
+    }
+
+    public void AtualizarDiasCalendario()
+    {
+        MesVisualizadoTexto = MesVisualizado.ToString("MMMM 'de' yyyy", new System.Globalization.CultureInfo("pt-BR"));
+
+        var dias = new List<CalendarDayItem>();
+        var primeiroDiaDoMes = new DateTime(MesVisualizado.Year, MesVisualizado.Month, 1);
+
+        int diff = (int)primeiroDiaDoMes.DayOfWeek; // 0 = Domingo
+        var dataInicio = primeiroDiaDoMes.AddDays(-diff);
+
+        for (int i = 0; i < 42; i++)
+        {
+            var dataAtual = dataInicio.AddDays(i);
+            dias.Add(new CalendarDayItem
+            {
+                Data = dataAtual,
+                IsMesAtual = dataAtual.Month == MesVisualizado.Month,
+                IsSelecionado = dataAtual.Date == DataSelecionada.Date,
+                IsHoje = dataAtual.Date == DateTime.Today
+            });
+        }
+
+        DiasCalendario = dias;
+    }
+
+    [RelayCommand]
+    public void MesAnterior()
+    {
+        MesVisualizado = MesVisualizado.AddMonths(-1);
+        AtualizarDiasCalendario();
+    }
+
+    [RelayCommand]
+    public void MesProximo()
+    {
+        MesVisualizado = MesVisualizado.AddMonths(1);
+        AtualizarDiasCalendario();
+    }
+
+    [RelayCommand]
+    public void SelecionarData(DateTime data)
+    {
+        DataSelecionada = data.Date;
+        MesVisualizado = new DateTime(data.Year, data.Month, 1);
+        IsCalendarOpen = false;
+    }
+
+    [RelayCommand]
+    public void HojeData()
+    {
+        DataSelecionada = DateTime.Today;
+        MesVisualizado = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        IsCalendarOpen = false;
+    }
+
+    [RelayCommand]
+    public void LimparData()
+    {
+        DataSelecionada = DateTime.Today;
+        MesVisualizado = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        IsCalendarOpen = false;
     }
 
     // Comandos de Navegação de Datas

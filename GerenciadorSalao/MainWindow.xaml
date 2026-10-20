@@ -69,6 +69,38 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Estilo do Botão de Alternar Sidebar no Header -->
+        <Style x:Key="HeaderIconButtonStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrushBorder}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FADBD5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -83,12 +115,14 @@
         <!-- Layout Central: Sidebar (Esquerda) + Área de Conteúdo (Direita) -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="230"/> <!-- Sidebar Lateral -->
+                <ColumnDefinition Width="Auto"/> <!-- Sidebar Lateral -->
                 <ColumnDefinition Width="*"/>   <!-- Top Header + Conteúdo da View -->
             </Grid.ColumnDefinitions>
 
             <!-- ===================== SIDEBAR LATERAL ===================== -->
             <Border Grid.Column="0" 
+                    Width="230"
+                    Visibility="{Binding IsSidebarOpen, Converter={StaticResource BooleanToVisibilityConverter}}"
                     Background="{StaticResource BrushSurface}" 
                     BorderBrush="{StaticResource BrushBorder}" 
                     BorderThickness="0,0,1,0">
@@ -218,13 +252,22 @@
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
                         BorderThickness="0,0,0,1" 
-                        Padding="28,0">
+                        Padding="16,0,28,0">
                     <Grid>
                         <!-- Breadcrumbs na Esquerda -->
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="Meu salão" FontSize="13" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Text="  /  " FontSize="13" Foreground="{StaticResource BrushBorder}"/>
-                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
+                            <!-- Botão de Alternar Sidebar -->
+                            <Button Command="{Binding ToggleSidebarCommand}"
+                                    ToolTip="Abrir / Recolher Menu Lateral"
+                                    Style="{StaticResource HeaderIconButtonStyle}"
+                                    Width="32" Height="32"
+                                    Margin="0,0,12,0">
+                                <ui:SymbolIcon Symbol="Navigation24" FontSize="16" Foreground="{StaticResource BrushTextPrimary}"/>
+                            </Button>
+
+                            <TextBlock Text="Meu salão" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="  /  " FontSize="13" Foreground="{StaticResource BrushBorder}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
                 </Border>
