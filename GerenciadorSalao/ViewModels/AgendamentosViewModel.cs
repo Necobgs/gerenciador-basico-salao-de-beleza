@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using GerenciadorSalao.Models.DTOs;
 using GerenciadorSalao.Services;
@@ -208,7 +209,7 @@ public partial class AgendamentosViewModel : ObservableObject
                     Id = ag.Id,
                     DataHora = ag.DataHora,
                     Horario = ag.DataHora.ToString("HH:mm"),
-                    DuracaoTexto = $"{ag.TempoTotalPrevistoMinutos} min",
+                    DuracaoTexto = ValidationHelper.FormatarDuracao(ag.TempoTotalPrevistoMinutos),
                     NomeCliente = nomeCli,
                     ServicosTexto = servicos,
                     ValorTotal = valorTotal,
@@ -411,7 +412,7 @@ public partial class AgendamentosViewModel : ObservableObject
     private void AtualizarTotaisNovoAgendamento()
     {
         TempoTotalNovoAgendamento = ServicosSelecionadosParaNovo.Sum(s => s.DuracaoMinutos);
-        TempoTotalMinutosTexto = $"{TempoTotalNovoAgendamento} minutos";
+        TempoTotalMinutosTexto = ValidationHelper.FormatarDuracao(TempoTotalNovoAgendamento);
 
         ValorTotalNovoAgendamento = ServicosSelecionadosParaNovo.Sum(s => s.Valor);
         ValorTotalServicosTexto = $"Total: {ValorTotalNovoAgendamento:C2}";

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using GerenciadorSalao.Models.DTOs;
 using GerenciadorSalao.Services;
@@ -318,7 +319,7 @@ public partial class DashboardViewModel : ObservableObject
                     Iniciais = ObterIniciais(nomeCli),
                     NomeCliente = nomeCli,
                     Servicos = servicos,
-                    Duracao = $"{ag.TempoTotalPrevistoMinutos} min",
+                    Duracao = ValidationHelper.FormatarDuracao(ag.TempoTotalPrevistoMinutos),
                     Valor = valorTotal.ToString("C2"),
                     Status = statusFormatado
                 });

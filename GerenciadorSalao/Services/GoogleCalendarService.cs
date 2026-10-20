@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Auth.OAuth2.Flows;
@@ -235,7 +236,7 @@ public class GoogleCalendarService : IGoogleCalendarService
         var sbDescricao = new StringBuilder();
         sbDescricao.AppendLine($"Cliente: {nomeCliente}");
         sbDescricao.AppendLine($"Telefone: {telefoneCliente}");
-        sbDescricao.AppendLine($"Tempo Total Previsto: {duracaoMinutos} min");
+        sbDescricao.AppendLine($"Tempo Total Previsto: {ValidationHelper.FormatarDuracao(duracaoMinutos)}");
         sbDescricao.AppendLine();
 
         if (agendamento.AgendamentoServicos != null && agendamento.AgendamentoServicos.Count > 0)

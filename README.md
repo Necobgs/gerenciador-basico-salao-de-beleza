@@ -16,12 +16,14 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 - **Soft Delete:** Exclusão lógica com data (`DeletedAt`), garantindo que o histórico contábil e as comandas passadas permaneçam íntegras.
 
 ### ✂️ 2. Módulo de Serviços e Produtos
-- **Catálogo de Serviços:** Descrição, valor e duração estimada em minutos (utilizada para prever a duração da agenda).
+- **Catálogo de Serviços em Cards:** Interface moderna no estilo Rosé Studio com cards visuais responsivos, ícone temático de corte/tesoura em tom blush/terracota suave, duração estimada com ícone de relógio, valor monetário em destaque e contador de serviços em tempo real.
+- **Busca Rápida de Serviços:** Filtragem instantânea e reativa por nome ou descrição do serviço.
+- **Modais Dedicados e Máscaras para Serviços:** Modais modernos para inclusão e edição de serviços com máscara decimal em tempo real no campo de valor (`R$`), máscara numérica no tempo estimado (min), validação defensiva em duas camadas e diálogo de confirmação seguro para exclusão.
 - **Catálogo de Produtos em Cards:** Interface moderna no estilo Rosé Studio com cards visuais responsivos, ícone temático verde sálvia, valor em destaque e contadores em tempo real.
 - **Busca Rápida de Produtos:** Filtragem instantânea por nome ou descrição do produto.
-- **Modais Dedicados e Máscaras:** Modais modernos para inclusão e edição de produtos com máscara decimal em tempo real no campo de valor (`R$`), além de diálogo de confirmação seguro para exclusão.
-- **Soft Delete:** Desativação segura de serviços e produtos para não corromper comandas já emitidas.
-- **Dados Iniciais (Seed):** Inicialização automática com cosméticos comuns para teste imediato.
+- **Modais Dedicados e Máscaras para Produtos:** Modais modernos para inclusão e edição de produtos com máscara decimal em tempo real no campo de valor (`R$`), além de diálogo de confirmação seguro para exclusão.
+- **Soft Delete:** Desativação segura de serviços e produtos (`DeletedAt`) para não corromper comandas e agendamentos já emitidos.
+- **Dados Iniciais (Seed):** Inicialização automática com serviços de estética/cabelo e cosméticos comuns para teste imediato.
 
 ### 📅 3. Módulo de Agendamentos (Agenda Inteligente)
 - **Seleção Flexível:** Associação de um cliente a múltiplos serviços.
