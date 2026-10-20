@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:local="clr-namespace:GerenciadorSalao"
+             xmlns:helpers="clr-namespace:GerenciadorSalao.Helpers"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
@@ -12,6 +13,7 @@
                 <ResourceDictionary Source="/Resources/Styles/Colors.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

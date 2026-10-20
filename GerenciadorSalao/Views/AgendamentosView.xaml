@@ -775,7 +775,7 @@
         <!-- ========================================================================= -->
         <Grid Visibility="{Binding IsModalNovoAgendamentoAberto, Converter={StaticResource BooleanToVisibilityConverter}}">
             <!-- Fundo Escurecido / Backdrop com Bloqueio de Cliques -->
-            <Border Background="#66000000"/>
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalNovoAgendamento_MouseLeftButtonDown"/>
 
             <!-- Cartão Centrado do Modal -->
             <Border Width="460"

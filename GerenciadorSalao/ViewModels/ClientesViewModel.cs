@@ -35,8 +35,26 @@ public class ClienteHistoricoComandaItem
     public string Status { get; set; } = "Finalizada";
 }
 
-public partial class ClientesViewModel : ObservableObject
+public partial class ClientesViewModel : ObservableObject, IModalHost
 {
+    public bool IsModalAberto => IsModalClienteAberto || IsHistoricoAberto;
+
+    public void FecharModalAtivo()
+    {
+        if (IsModalClienteAberto) FecharModalCliente();
+        if (IsHistoricoAberto) FecharHistorico();
+    }
+
+    partial void OnIsModalClienteAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
+    partial void OnIsHistoricoAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
     private readonly IClienteService _clienteService;
     private readonly IComandaService _comandaService;
 

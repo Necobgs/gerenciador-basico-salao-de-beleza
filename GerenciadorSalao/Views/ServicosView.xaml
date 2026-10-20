@@ -339,7 +339,8 @@
         </ScrollViewer>
 
         <!-- ===================== MODAL: NOVO / EDITAR SERVIÇO ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsModalServicoAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsModalServicoAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalServico_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="440" 
@@ -447,7 +448,8 @@
         </Grid>
 
         <!-- ===================== MODAL: EXCLUIR SERVIÇO ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsModalExcluirAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsModalExcluirAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalExcluir_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="440" 

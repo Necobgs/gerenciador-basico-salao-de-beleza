@@ -8,8 +8,26 @@ using GerenciadorSalao.Services;
 
 namespace GerenciadorSalao.ViewModels;
 
-public partial class ServicosViewModel : ObservableObject
+public partial class ServicosViewModel : ObservableObject, IModalHost
 {
+    public bool IsModalAberto => IsModalServicoAberto || IsModalExcluirAberto;
+
+    public void FecharModalAtivo()
+    {
+        if (IsModalServicoAberto) FecharModalServico();
+        if (IsModalExcluirAberto) FecharModalExcluir();
+    }
+
+    partial void OnIsModalServicoAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
+    partial void OnIsModalExcluirAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
     private readonly IServicoService _servicoService;
     private static readonly CultureInfo PtBrCulture = new("pt-BR");
 

@@ -1,4 +1,5 @@
 using GerenciadorSalao.Models;
+using GerenciadorSalao.Models.DTOs;
 
 namespace GerenciadorSalao.Services;
 
@@ -16,4 +17,5 @@ public interface IComandaService
     Task AtualizarObservacaoAsync(int comandaId, string? observacao);
     Task FinalizarComandaAsync(int comandaId);
     Task ExcluirComandaAsync(int comandaId);
+    Task<Comanda> SalvarComandaCompletaAsync(int? comandaId, int clienteId, string? observacao, List<ComandaItemDto> itens, bool finalizar = false);
 }

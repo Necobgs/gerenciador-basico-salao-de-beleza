@@ -1,5 +1,6 @@
 using GerenciadorSalao.Data;
 using GerenciadorSalao.Models;
+using GerenciadorSalao.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace GerenciadorSalao.Services;
@@ -238,6 +239,91 @@ public class ComandaService : IComandaService
 
         _context.Comandas.Remove(comanda);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<Comanda> SalvarComandaCompletaAsync(
+        int? comandaId, 
+        int clienteId, 
+        string? observacao, 
+        List<ComandaItemDto> itens, 
+        bool finalizar = false)
+    {
+        if (clienteId <= 0)
+            throw new ArgumentException("O cliente da comanda é obrigatório.", nameof(clienteId));
+
+        if (itens == null || itens.Count == 0)
+            throw new InvalidOperationException("A comanda precisa ter pelo menos um item (serviço ou produto).");
+
+        foreach (var it in itens)
+        {
+            if (it.ValorUnitario < 0)
+                throw new ArgumentException($"O valor unitário do item '{it.Descricao}' não pode ser negativo.");
+            if (it.Quantidade <= 0)
+                throw new ArgumentException($"A quantidade do item '{it.Descricao}' deve ser maior que zero.");
+        }
+
+        Comanda comanda;
+
+        if (comandaId.HasValue && comandaId.Value > 0)
+        {
+            comanda = await _context.Comandas
+                .Include(c => c.Itens)
+                .Include(c => c.Agendamento)
+                .FirstOrDefaultAsync(c => c.Id == comandaId.Value)
+                ?? throw new InvalidOperationException("Comanda não encontrada.");
+
+            if (comanda.Status != StatusComanda.Aberta)
+                throw new InvalidOperationException("Não é permitido alterar uma comanda já fechada ou cancelada.");
+
+            comanda.ClienteId = clienteId;
+            comanda.Observacao = observacao?.Trim();
+
+            // Substitui itens
+            _context.ComandaItens.RemoveRange(comanda.Itens);
+            comanda.Itens.Clear();
+        }
+        else
+        {
+            comanda = new Comanda
+            {
+                ClienteId = clienteId,
+                DataAbertura = DateTime.Now,
+                Status = StatusComanda.Aberta,
+                Observacao = observacao?.Trim()
+            };
+            _context.Comandas.Add(comanda);
+        }
+
+        // Adiciona todos os itens atualizados
+        foreach (var it in itens)
+        {
+            comanda.Itens.Add(new ComandaItem
+            {
+                Comanda = comanda,
+                Tipo = it.Tipo,
+                ServicoId = it.Tipo == TipoItemComanda.Servico ? it.ReferenciaId : null,
+                ProdutoId = it.Tipo == TipoItemComanda.Produto ? it.ReferenciaId : null,
+                Descricao = it.Descricao,
+                Quantidade = it.Quantidade,
+                ValorUnitario = it.ValorUnitario
+            });
+        }
+
+        comanda.ValorTotal = comanda.CalcularTotalItens();
+
+        if (finalizar)
+        {
+            comanda.Status = StatusComanda.Finalizada;
+            comanda.DataFechamento = DateTime.Now;
+
+            if (comanda.Agendamento != null)
+            {
+                comanda.Agendamento.Status = StatusAgendamento.Concluido;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return comanda;
     }
 
     private async Task<Comanda> ValidarComandaAbertaParaEdicaoAsync(int comandaId)

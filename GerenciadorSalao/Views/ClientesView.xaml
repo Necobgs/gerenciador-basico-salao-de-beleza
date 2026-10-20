@@ -400,7 +400,8 @@
         </ScrollViewer>
 
         <!-- ===================== MODAL: NOVO CLIENTE / EDITAR CLIENTE ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsModalClienteAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsModalClienteAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalCliente_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="460" 
@@ -521,7 +522,8 @@
         </Grid>
 
         <!-- ===================== MODAL: HISTÓRICO DO CLIENTE ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsHistoricoAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsHistoricoAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharHistorico_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="520" 

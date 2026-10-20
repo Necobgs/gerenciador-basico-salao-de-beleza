@@ -26,8 +26,19 @@ public class AgendamentoListItemViewModel
     public int? ComandaId { get; set; }
 }
 
-public partial class AgendamentosViewModel : ObservableObject
+public partial class AgendamentosViewModel : ObservableObject, IModalHost
 {
+    public bool IsModalAberto => IsModalNovoAgendamentoAberto;
+
+    public void FecharModalAtivo()
+    {
+        FecharModalNovoAgendamento();
+    }
+
+    partial void OnIsModalNovoAgendamentoAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
     private readonly IAgendamentoService _agendamentoService;
     private readonly IClienteService _clienteService;
     private readonly IServicoService _servicoService;
