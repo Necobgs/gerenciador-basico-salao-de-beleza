@@ -17,9 +17,11 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 
 ### ✂️ 2. Módulo de Serviços e Produtos
 - **Catálogo de Serviços:** Descrição, valor e duração estimada em minutos (utilizada para prever a duração da agenda).
-- **Catálogo de Produtos:** Descrição, valor de venda e controle simples de estoque.
+- **Catálogo de Produtos em Cards:** Interface moderna no estilo Rosé Studio com cards visuais responsivos, ícone temático verde sálvia, valor em destaque e contadores em tempo real.
+- **Busca Rápida de Produtos:** Filtragem instantânea por nome ou descrição do produto.
+- **Modais Dedicados e Máscaras:** Modais modernos para inclusão e edição de produtos com máscara decimal em tempo real no campo de valor (`R$`), além de diálogo de confirmação seguro para exclusão.
 - **Soft Delete:** Desativação segura de serviços e produtos para não corromper comandas já emitidas.
-- **Dados Iniciais (Seed):** Inicialização automática com serviços e produtos comuns de salão para teste imediato.
+- **Dados Iniciais (Seed):** Inicialização automática com cosméticos comuns para teste imediato.
 
 ### 📅 3. Módulo de Agendamentos (Agenda Inteligente)
 - **Seleção Flexível:** Associação de um cliente a múltiplos serviços.
