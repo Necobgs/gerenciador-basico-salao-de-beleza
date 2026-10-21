@@ -195,35 +195,253 @@ public static class ValidationHelper
         return true;
     }
 
-    public static bool ValidarValorProduto(string? valorTexto, out decimal valorDecimal, out string? erro)
+    public static string FormatarMoeda(string? raw, bool incluirSimbolo = false)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        var digitos = LimparApenasDigitos(raw);
+        if (digitos.Length == 0) return string.Empty;
+
+        // Trata sequência de zeros à esquerda
+        digitos = digitos.TrimStart('0');
+        if (digitos.Length == 0) return incluirSimbolo ? "R$ 0,00" : "0,00";
+        if (digitos.Length == 1) return incluirSimbolo ? $"R$ 0,0{digitos}" : $"0,0{digitos}";
+        if (digitos.Length == 2) return incluirSimbolo ? $"R$ 0,{digitos}" : $"0,{digitos}";
+
+        var centavos = digitos[^2..];
+        var inteirosStr = digitos[..^2];
+
+        if (long.TryParse(inteirosStr, out var inteirosVal))
+        {
+            var inteirosFormatado = inteirosVal.ToString("N0", new System.Globalization.CultureInfo("pt-BR"));
+            var resultado = $"{inteirosFormatado},{centavos}";
+            return incluirSimbolo ? $"R$ {resultado}" : resultado;
+        }
+
+        var res = $"{inteirosStr},{centavos}";
+        return incluirSimbolo ? $"R$ {res}" : res;
+    }
+
+    public static string FormatarDuracao(int minutos, bool abreviado = false)
+    {
+        if (minutos <= 0) return abreviado ? "0 min" : "0 minutos";
+
+        if (minutos < 60)
+        {
+            return abreviado ? $"{minutos} min" : (minutos == 1 ? "1 minuto" : $"{minutos} minutos");
+        }
+
+        var horas = minutos / 60;
+        var restoMinutos = minutos % 60;
+
+        if (abreviado)
+        {
+            return restoMinutos == 0 ? $"{horas}h" : $"{horas}h {restoMinutos:D2}m";
+        }
+
+        if (restoMinutos == 0)
+        {
+            return horas == 1 ? "1:00 hora" : $"{horas}:00 horas";
+        }
+
+        return $"{horas}:{restoMinutos:D2} horas";
+    }
+
+    public static string FormatarMinutosParaHhMm(int minutos)
+    {
+        if (minutos <= 0) return "0:00";
+        var horas = minutos / 60;
+        var restoMinutos = minutos % 60;
+        return $"{horas}:{restoMinutos:D2}";
+    }
+
+    public static string FormatarDuracaoParaEdicao(int minutos)
+    {
+        if (minutos <= 0) return "1:00";
+        return FormatarMinutosParaHhMm(minutos);
+    }
+
+    public static bool ValidarValorMonetario(string? valorTexto, out decimal valorDecimal, out string? erro, string campoNome = "item")
     {
         valorDecimal = 0;
         if (string.IsNullOrWhiteSpace(valorTexto))
         {
-            erro = "O valor do produto é obrigatório.";
+            erro = $"O valor do {campoNome} é obrigatório.";
             return false;
         }
 
         var limpo = valorTexto.Replace("R$", "").Trim();
-        if (limpo.Contains(',') && limpo.Contains('.'))
+
+        // Se contém apenas ponto e NÃO contém vírgula (ex: "120.50" ou "80.00" digitado no teclado numérico):
+        if (limpo.Contains('.') && !limpo.Contains(','))
         {
-            limpo = limpo.Replace(".", ""); // remove separador de milhar
+            var partes = limpo.Split('.');
+            // Se houver 1 ponto e até 2 dígitos depois dele, o usuário utilizou ponto como separador decimal
+            if (partes.Length == 2 && partes[1].Length <= 2)
+            {
+                limpo = $"{partes[0]},{partes[1]}";
+            }
+            else
+            {
+                // Múltiplos pontos ou mais de 2 dígitos: trata como separador de milhar (ex: 1.000 ou 1.000.000)
+                limpo = limpo.Replace(".", "");
+            }
+        }
+        else if (limpo.Contains(',') && limpo.Contains('.'))
+        {
+            // Ponto como milhar e vírgula como decimal (ex: 1.250,50)
+            limpo = limpo.Replace(".", "");
         }
 
         if (!decimal.TryParse(limpo, System.Globalization.NumberStyles.Currency, new System.Globalization.CultureInfo("pt-BR"), out valorDecimal) &&
             !decimal.TryParse(limpo, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valorDecimal))
         {
-            erro = "Informe um valor monetário válido (ex: 89,00).";
+            erro = "Informe um valor monetário válido (ex: 80,00 ou 120,50).";
             return false;
         }
 
         if (valorDecimal < 0)
         {
-            erro = "O valor do produto não pode ser negativo.";
+            erro = $"O valor do {campoNome} não pode ser negativo.";
             return false;
         }
 
         erro = null;
         return true;
     }
+
+
+    public static bool ValidarValorProduto(string? valorTexto, out decimal valorDecimal, out string? erro)
+    {
+        return ValidarValorMonetario(valorTexto, out valorDecimal, out erro, "produto");
+    }
+
+    public static bool ValidarDescricaoServico(string? descricao, out string? erro)
+    {
+        if (string.IsNullOrWhiteSpace(descricao))
+        {
+            erro = "O nome / descrição do serviço é obrigatório.";
+            return false;
+        }
+
+        var trimmed = descricao.Trim();
+        if (trimmed.Length < 2)
+        {
+            erro = "A descrição do serviço deve conter pelo menos 2 caracteres.";
+            return false;
+        }
+
+        if (trimmed.Length > 100)
+        {
+            erro = "A descrição do serviço não pode exceder 100 caracteres.";
+            return false;
+        }
+
+        erro = null;
+        return true;
+    }
+
+    public static bool ValidarValorServico(string? valorTexto, out decimal valorDecimal, out string? erro)
+    {
+        return ValidarValorMonetario(valorTexto, out valorDecimal, out erro, "serviço");
+    }
+
+    public static bool ValidarDuracaoServico(string? duracaoTexto, out int duracaoMinutos, out string? erro)
+    {
+        duracaoMinutos = 0;
+        if (string.IsNullOrWhiteSpace(duracaoTexto))
+        {
+            erro = "O tempo estimado é obrigatório (ex: 2:30 ou 90 min).";
+            return false;
+        }
+
+        var limpo = duracaoTexto.Trim().ToLower();
+
+        // 1. Formato com dois pontos (ex: "2:30", "02:30", "1:00", "0:45")
+        if (limpo.Contains(':'))
+        {
+            var partes = limpo.Split(':');
+            if (partes.Length == 2 &&
+                int.TryParse(LimparApenasDigitos(partes[0]), out var horas) &&
+                int.TryParse(LimparApenasDigitos(partes[1]), out var minutos))
+            {
+                if (minutos >= 60)
+                {
+                    erro = "Os minutos não podem ser 60 ou mais em formato hh:mm (ex: use 1:30 ao invés de 1:90).";
+                    return false;
+                }
+
+                duracaoMinutos = (horas * 60) + minutos;
+                if (duracaoMinutos <= 0)
+                {
+                    erro = "A duração do serviço deve ser maior que zero.";
+                    return false;
+                }
+
+                if (duracaoMinutos > 1440)
+                {
+                    erro = "A duração não pode exceder 24 horas (1440 min).";
+                    return false;
+                }
+
+                erro = null;
+                return true;
+            }
+
+            erro = "Formato de hora inválido. Use horas:minutos (ex: 2:30) ou minutos (ex: 90).";
+            return false;
+        }
+
+        // 2. Formato com letra 'h' (ex: "2h30", "2h", "1h 30m")
+        if (limpo.Contains('h'))
+        {
+            var partes = limpo.Split('h');
+            var horasStr = LimparApenasDigitos(partes[0]);
+            var minsStr = partes.Length > 1 ? LimparApenasDigitos(partes[1]) : "";
+
+            var horas = string.IsNullOrEmpty(horasStr) ? 0 : int.Parse(horasStr);
+            var minutos = string.IsNullOrEmpty(minsStr) ? 0 : int.Parse(minsStr);
+
+            if (minutos >= 60)
+            {
+                erro = "Os minutos não podem ser 60 ou mais.";
+                return false;
+            }
+
+            duracaoMinutos = (horas * 60) + minutos;
+            if (duracaoMinutos <= 0)
+            {
+                erro = "A duração do serviço deve ser maior que zero.";
+                return false;
+            }
+
+            if (duracaoMinutos > 1440)
+            {
+                erro = "A duração não pode exceder 24 horas.";
+                return false;
+            }
+
+            erro = null;
+            return true;
+        }
+
+        // 3. Formato numérico direto (minutos totais: ex: "30", "45", "90", "120", "180")
+        var digitos = LimparApenasDigitos(limpo);
+        if (!int.TryParse(digitos, out var minutosTotais) || minutosTotais <= 0)
+        {
+            erro = "Informe um tempo de duração válido (ex: 2:30 para horas e minutos ou 90 para minutos).";
+            return false;
+        }
+
+        if (minutosTotais > 1440)
+        {
+            erro = "A duração não pode exceder 1440 minutos (24 horas).";
+            return false;
+        }
+
+        duracaoMinutos = minutosTotais;
+        erro = null;
+        return true;
+    }
 }
+

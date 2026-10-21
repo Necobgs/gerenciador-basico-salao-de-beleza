@@ -10,19 +10,84 @@ public static class DbInitializer
         // Garante que o banco de dados e as tabelas existam
         context.Database.EnsureCreated();
 
+        // Migração defensiva para colunas novas em Servicos (Especificacao e DuracaoFormatada)
+        try
+        {
+            using var cmd = context.Database.GetDbConnection().CreateCommand();
+            context.Database.OpenConnection();
+            cmd.CommandText = "PRAGMA table_info(Servicos);";
+            using var reader = cmd.ExecuteReader();
+            bool hasEspecificacao = false;
+            bool hasDuracaoFormatada = false;
+            while (reader.Read())
+            {
+                var colName = reader.GetString(1);
+                if (string.Equals(colName, "Especificacao", StringComparison.OrdinalIgnoreCase))
+                    hasEspecificacao = true;
+                if (string.Equals(colName, "DuracaoFormatada", StringComparison.OrdinalIgnoreCase))
+                    hasDuracaoFormatada = true;
+            }
+            reader.Close();
+
+            if (!hasEspecificacao)
+            {
+                cmd.CommandText = "ALTER TABLE Servicos ADD COLUMN Especificacao TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!hasDuracaoFormatada)
+            {
+                cmd.CommandText = "ALTER TABLE Servicos ADD COLUMN DuracaoFormatada TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DbInitializer] Migração Servicos: {ex.Message}");
+        }
+
+        // Atualização de registros existentes que ainda não possuam DuracaoFormatada ou tenham a descrição unificada anterior
+        try
+        {
+            var servicosExistentes = context.Servicos.Where(s => s.DeletedAt == null).ToList();
+            bool alterouExistentes = false;
+            foreach (var s in servicosExistentes)
+            {
+                if (s.Descricao == "Coloração / Tintura")
+                {
+                    s.Descricao = "Coloração";
+                    s.Especificacao = "Tintura";
+                    alterouExistentes = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(s.DuracaoFormatada))
+                {
+                    s.DuracaoFormatada = GerenciadorSalao.Helpers.ValidationHelper.FormatarMinutosParaHhMm(s.DuracaoMinutos);
+                    alterouExistentes = true;
+                }
+            }
+            if (alterouExistentes)
+            {
+                context.SaveChanges();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DbInitializer] Ajuste inicial Servicos: {ex.Message}");
+        }
+
         // Seed inicial de Serviços caso o banco esteja vazio
         if (!context.Servicos.Any())
         {
             var servicosIniciais = new List<Servico>
             {
-                new() { Descricao = "Corte Feminino", Valor = 80.00m, DuracaoMinutos = 45, Ativo = true },
-                new() { Descricao = "Corte Masculino", Valor = 50.00m, DuracaoMinutos = 30, Ativo = true },
-                new() { Descricao = "Manicure Completa", Valor = 40.00m, DuracaoMinutos = 40, Ativo = true },
-                new() { Descricao = "Pedicure", Valor = 45.00m, DuracaoMinutos = 45, Ativo = true },
-                new() { Descricao = "Escova e Modelagem", Valor = 60.00m, DuracaoMinutos = 40, Ativo = true },
-                new() { Descricao = "Coloração / Tintura", Valor = 150.00m, DuracaoMinutos = 90, Ativo = true },
-                new() { Descricao = "Hidratação Profunda", Valor = 90.00m, DuracaoMinutos = 50, Ativo = true },
-                new() { Descricao = "Design de Sobrancelhas", Valor = 35.00m, DuracaoMinutos = 25, Ativo = true }
+                new() { Descricao = "Corte Feminino", Valor = 80.00m, DuracaoMinutos = 45, DuracaoFormatada = "0:45", Ativo = true },
+                new() { Descricao = "Corte Masculino", Valor = 50.00m, DuracaoMinutos = 30, DuracaoFormatada = "0:30", Ativo = true },
+                new() { Descricao = "Manicure Completa", Valor = 40.00m, DuracaoMinutos = 40, DuracaoFormatada = "0:40", Ativo = true },
+                new() { Descricao = "Pedicure", Valor = 45.00m, DuracaoMinutos = 45, DuracaoFormatada = "0:45", Ativo = true },
+                new() { Descricao = "Escova e Modelagem", Valor = 60.00m, DuracaoMinutos = 40, DuracaoFormatada = "0:40", Ativo = true },
+                new() { Descricao = "Coloração", Especificacao = "Tintura", Valor = 150.00m, DuracaoMinutos = 90, DuracaoFormatada = "1:30", Ativo = true },
+                new() { Descricao = "Hidratação Profunda", Valor = 90.00m, DuracaoMinutos = 50, DuracaoFormatada = "0:50", Ativo = true },
+                new() { Descricao = "Design de Sobrancelhas", Valor = 35.00m, DuracaoMinutos = 25, DuracaoFormatada = "0:25", Ativo = true }
             };
 
             context.Servicos.AddRange(servicosIniciais);

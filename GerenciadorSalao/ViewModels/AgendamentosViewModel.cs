@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using GerenciadorSalao.Models.DTOs;
 using GerenciadorSalao.Services;
@@ -25,8 +26,19 @@ public class AgendamentoListItemViewModel
     public int? ComandaId { get; set; }
 }
 
-public partial class AgendamentosViewModel : ObservableObject
+public partial class AgendamentosViewModel : ObservableObject, IModalHost
 {
+    public bool IsModalAberto => IsModalNovoAgendamentoAberto;
+
+    public void FecharModalAtivo()
+    {
+        FecharModalNovoAgendamento();
+    }
+
+    partial void OnIsModalNovoAgendamentoAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
     private readonly IAgendamentoService _agendamentoService;
     private readonly IClienteService _clienteService;
     private readonly IServicoService _servicoService;
@@ -174,8 +186,8 @@ public partial class AgendamentosViewModel : ObservableObject
 
             foreach (var ag in agendamentosDb)
             {
-                var nomeCli = ag.Cliente?.Nome ?? "Cliente";
-                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
+                var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente";
+                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
                 var valorTotal = ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
@@ -208,7 +220,7 @@ public partial class AgendamentosViewModel : ObservableObject
                     Id = ag.Id,
                     DataHora = ag.DataHora,
                     Horario = ag.DataHora.ToString("HH:mm"),
-                    DuracaoTexto = $"{ag.TempoTotalPrevistoMinutos} min",
+                    DuracaoTexto = ValidationHelper.FormatarDuracao(ag.TempoTotalPrevistoMinutos),
                     NomeCliente = nomeCli,
                     ServicosTexto = servicos,
                     ValorTotal = valorTotal,
@@ -358,13 +370,13 @@ public partial class AgendamentosViewModel : ObservableObject
             // Carrega Clientes
             var clientes = await _clienteService.ObterTodosAsync();
             ClientesDisponiveis.Clear();
-            foreach (var c in clientes.OrderBy(c => c.Nome))
+            foreach (var c in clientes.OrderBy(c => c.NomeExibicao))
                 ClientesDisponiveis.Add(c);
 
             // Carrega Serviços
             var servicos = await _servicoService.ObterTodosAsync(apenasAtivos: true);
             ServicosDisponiveis.Clear();
-            foreach (var s in servicos.OrderBy(s => s.Descricao))
+            foreach (var s in servicos.OrderBy(s => s.NomeExibicao))
                 ServicosDisponiveis.Add(s);
 
             ClienteSelecionado = null;
@@ -411,7 +423,7 @@ public partial class AgendamentosViewModel : ObservableObject
     private void AtualizarTotaisNovoAgendamento()
     {
         TempoTotalNovoAgendamento = ServicosSelecionadosParaNovo.Sum(s => s.DuracaoMinutos);
-        TempoTotalMinutosTexto = $"{TempoTotalNovoAgendamento} minutos";
+        TempoTotalMinutosTexto = ValidationHelper.FormatarDuracao(TempoTotalNovoAgendamento);
 
         ValorTotalNovoAgendamento = ServicosSelecionadosParaNovo.Sum(s => s.Valor);
         ValorTotalServicosTexto = $"Total: {ValorTotalNovoAgendamento:C2}";

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GerenciadorSalao.Helpers;
 using GerenciadorSalao.Models;
 using GerenciadorSalao.Models.DTOs;
 using GerenciadorSalao.Services;
@@ -93,10 +94,7 @@ public partial class DashboardViewModel : ObservableObject
     private string _periodoSelecionado = "Ano completo";
 
     [ObservableProperty]
-    private List<string> _periodosDisponiveis = new()
-    {
-        "Ano completo", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"
-    };
+    private List<string> _periodosDisponiveis = new() { "Ano completo", "1º Semestre", "2º Semestre" };
 
     [ObservableProperty]
     private int _anoSelecionado = DateTime.Today.Year;
@@ -108,42 +106,13 @@ public partial class DashboardViewModel : ObservableObject
     private decimal _faturamentoAcumuladoAno;
 
     [ObservableProperty]
-    private string _tagFaturamentoPeriodo = "Acumulado do ano";
-
-    [ObservableProperty]
-    private bool _isChartHovered = true;
-
-    [ObservableProperty]
-    private string _hoverMesNome = "Set";
-
-    [ObservableProperty]
-    private string _hoverMesValorFormatado = "R$ 3.120,00";
-
-    [ObservableProperty]
-    private double _hoverIndicatorX = 320;
-
-    [ObservableProperty]
-    private double _hoverDotLeft = 315;
-
-    [ObservableProperty]
-    private double _hoverDotTop = 15;
-
-    [ObservableProperty]
-    private double _hoverTooltipX = 160;
-
-    [ObservableProperty]
-    private double _hoverTooltipY = 25;
-
-    private decimal[] _faturamentoMeses = new decimal[12];
-    public static readonly string[] MesesNomes = { "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez" };
-    private double _ultimaLarguraGrafico = 450;
+    private string _periodoTagDescricao = "Acumulado do ano";
 
     partial void OnPeriodoSelecionadoChanged(string value) => _ = CarregarDadosAsync();
     partial void OnAnoSelecionadoChanged(int value) => _ = CarregarDadosAsync();
 
     partial void OnDataSelecionadaChanged(DateTime value)
     {
-        OnPropertyChanged(nameof(DataHojeFormatada));
         AtualizarDiasCalendario();
         _ = CarregarDadosAsync();
     }
@@ -228,12 +197,6 @@ public partial class DashboardViewModel : ObservableObject
         MesVisualizado = new DateTime(DataSelecionada.Year, DataSelecionada.Month, 1);
         AtualizarDiasCalendario();
 
-        _faturamentoMeses = new decimal[]
-        {
-            1650m, 1820m, 2050m, 2240m, 2450m, 2680m, 2890m, 3010m, 3120m, 2990m, 0m, 0m
-        };
-        AtualizarHoverMes(8, 450);
-
         _ = CarregarDadosAsync();
     }
 
@@ -260,8 +223,7 @@ public partial class DashboardViewModel : ObservableObject
             foreach (var c in todasComandas)
             {
                 var dt = c.DataFechamento ?? c.DataAbertura;
-                if (dt.Year > 2000 && dt.Year < 2100)
-                    anosSet.Add(dt.Year);
+                anosSet.Add(dt.Year);
             }
             var anosOrdenados = anosSet.Reverse().ToList();
             if (!AnosDisponiveis.SequenceEqual(anosOrdenados))
@@ -282,42 +244,30 @@ public partial class DashboardViewModel : ObservableObject
             var todosClientes = await _clienteService.ObterTodosAsync();
             TotalClientes = todosClientes.Count;
 
-            // 5. Faturamento acumulado do ano selecionado e valores mensais
+            // 5. Faturamento mensal e acumulado do ano selecionado via RelatorioService
             var faturamentoMensal = await _relatorioService.ObterFaturamentoMensalPorAnoAsync(AnoSelecionado);
-            var valoresPorMes = new decimal[12];
+            List<FaturamentoMensalDto> dadosPeriodo;
 
-            if (AnoSelecionado == 2026)
+            if (PeriodoSelecionado == "1º Semestre")
             {
-                // Distribuição calibrada de referência (Total = R$ 24.900,00)
-                valoresPorMes = new decimal[]
-                {
-                    1650m, 1820m, 2050m, 2240m, 2450m, 2680m, 2890m, 3010m, 3120m, 2990m, 0m, 0m
-                };
+                dadosPeriodo = faturamentoMensal.Where(f => f.Mes <= 6).ToList();
+                PeriodoTagDescricao = $"1º Semestre de {AnoSelecionado}";
+            }
+            else if (PeriodoSelecionado == "2º Semestre")
+            {
+                dadosPeriodo = faturamentoMensal.Where(f => f.Mes >= 7).ToList();
+                PeriodoTagDescricao = $"2º Semestre de {AnoSelecionado}";
             }
             else
             {
-                foreach (var item in faturamentoMensal)
-                {
-                    if (item.Mes >= 1 && item.Mes <= 12)
-                        valoresPorMes[item.Mes - 1] = item.Total;
-                }
+                dadosPeriodo = faturamentoMensal.ToList();
+                PeriodoTagDescricao = $"Acumulado de {AnoSelecionado}";
             }
-            _faturamentoMeses = valoresPorMes;
 
-            // Filtragem por Período (Ano completo ou Mês específico)
-            var mesIndex = Array.IndexOf(MesesNomes, PeriodoSelecionado);
-            if (mesIndex >= 0)
-            {
-                FaturamentoAcumuladoAno = _faturamentoMeses[mesIndex];
-                TagFaturamentoPeriodo = $"Faturamento de {PeriodoSelecionado}";
-                AtualizarHoverMes(mesIndex, _ultimaLarguraGrafico);
-            }
-            else
-            {
-                FaturamentoAcumuladoAno = _faturamentoMeses.Sum();
-                TagFaturamentoPeriodo = "Acumulado do ano";
-                AtualizarHoverMes(8, _ultimaLarguraGrafico); // Destaque padrão em Setembro
-            }
+            FaturamentoAcumuladoAno = dadosPeriodo.Sum(f => f.Total);
+
+            // 5.1 Atualiza Geometria e Dados Dinâmicos do Gráfico
+            AtualizarGrafico(dadosPeriodo);
 
             // 6. Top 5 Clientes formatados com iniciais e cores a partir do RelatorioService
             var topRaw = await _relatorioService.ObterTopClientesAsync(5, AnoSelecionado);
@@ -342,12 +292,12 @@ public partial class DashboardViewModel : ObservableObject
             }
             TopClientes = topList;
 
-            // 7. Lista da Agenda do Dia
+            // 7. Lista detalhada de agendamentos reais do dia selecionado
             var agendaList = new List<AgendaItemDashboard>();
-            foreach (var ag in agendamentosHojeLista)
+            foreach (var ag in agendamentosHojeLista.OrderBy(a => a.DataHora))
             {
-                var nomeCli = ag.Cliente?.Nome ?? "Cliente";
-                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
+                var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente avulso";
+                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
                 var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0
@@ -369,7 +319,7 @@ public partial class DashboardViewModel : ObservableObject
                     Iniciais = ObterIniciais(nomeCli),
                     NomeCliente = nomeCli,
                     Servicos = servicos,
-                    Duracao = $"{ag.TempoTotalPrevistoMinutos} min",
+                    Duracao = ValidationHelper.FormatarDuracao(ag.TempoTotalPrevistoMinutos),
                     Valor = valorTotal.ToString("C2"),
                     Status = statusFormatado
                 });
@@ -544,32 +494,6 @@ public partial class DashboardViewModel : ObservableObject
         return $"{partes[0][0]}{partes[^1][0]}".ToUpper();
     }
 
-    // Comandos de Navegação de Datas
-    [RelayCommand]
-    public void IrParaDiaAnterior() => DataSelecionada = DataSelecionada.AddDays(-1);
-
-    [RelayCommand]
-    public void IrParaProximoDia() => DataSelecionada = DataSelecionada.AddDays(1);
-
-    [RelayCommand]
-    public void IrParaHoje() => DataSelecionada = DateTime.Today;
-
-    // Comandos de Navegação Entre Telas
-    [RelayCommand]
-    public void IrParaAgenda() => NavigationRequested?.Invoke("Agendamentos");
-
-    [RelayCommand]
-    public void NovoAgendamento() => NavigationRequested?.Invoke("Agendamentos");
-
-    [RelayCommand]
-    public void IrParaComandas() => NavigationRequested?.Invoke("Comandas");
-
-    [RelayCommand]
-    public void IrParaClientes() => NavigationRequested?.Invoke("Clientes");
-
-    [RelayCommand]
-    public void IrParaRelatorios() => NavigationRequested?.Invoke("Relatorios");
-
     public void AtualizarDiasCalendario()
     {
         MesVisualizadoTexto = MesVisualizado.ToString("MMMM 'de' yyyy", new System.Globalization.CultureInfo("pt-BR"));
@@ -633,54 +557,29 @@ public partial class DashboardViewModel : ObservableObject
         IsCalendarOpen = false;
     }
 
-    public void AtualizarHoverMes(int monthIndex, double chartWidth)
-    {
-        _ultimaLarguraGrafico = chartWidth > 0 ? chartWidth : 450;
-        if (monthIndex < 0 || monthIndex >= 12) return;
+    // Comandos de Navegação de Datas
+    [RelayCommand]
+    public void IrParaDiaAnterior() => DataSelecionada = DataSelecionada.AddDays(-1);
 
-        var nomeMes = MesesNomes[monthIndex];
-        var valor = _faturamentoMeses != null && _faturamentoMeses.Length == 12 
-            ? _faturamentoMeses[monthIndex] 
-            : 0m;
+    [RelayCommand]
+    public void IrParaProximoDia() => DataSelecionada = DataSelecionada.AddDays(1);
 
-        HoverMesNome = nomeMes;
-        HoverMesValorFormatado = valor.ToString("C2");
-        IsChartHovered = true;
+    [RelayCommand]
+    public void IrParaHoje() => DataSelecionada = DateTime.Today;
 
-        double colWidth = _ultimaLarguraGrafico / 12.0;
-        double xCenter = (monthIndex + 0.5) * colWidth;
+    // Comandos de Navegação Entre Telas
+    [RelayCommand]
+    public void IrParaAgenda() => NavigationRequested?.Invoke("Agendamentos");
 
-        HoverIndicatorX = xCenter;
-        HoverDotLeft = xCenter - 5;
+    [RelayCommand]
+    public void NovoAgendamento() => NavigationRequested?.Invoke("Agendamentos");
 
-        // Cálculo Y na curva (área de 6 a 145px)
-        double ratio = Math.Clamp((double)valor / 3400.0, 0.0, 1.0);
-        double yPos = 145.0 - (ratio * 130.0);
-        HoverDotTop = yPos - 5;
+    [RelayCommand]
+    public void IrParaComandas() => NavigationRequested?.Invoke("Comandas");
 
-        // Posição do Tooltip (se estiver na metade direita do gráfico, mostra à esquerda)
-        if (monthIndex >= 6)
-        {
-            HoverTooltipX = Math.Max(10, xCenter - 165);
-        }
-        else
-        {
-            HoverTooltipX = Math.Min(_ultimaLarguraGrafico - 170, xCenter + 15);
-        }
+    [RelayCommand]
+    public void IrParaClientes() => NavigationRequested?.Invoke("Clientes");
 
-        HoverTooltipY = Math.Clamp(yPos + 10, 8, 80);
-    }
-
-    public void LimparHover()
-    {
-        var idx = Array.IndexOf(MesesNomes, PeriodoSelecionado);
-        if (idx >= 0)
-        {
-            AtualizarHoverMes(idx, _ultimaLarguraGrafico);
-        }
-        else
-        {
-            AtualizarHoverMes(8, _ultimaLarguraGrafico);
-        }
-    }
+    [RelayCommand]
+    public void IrParaRelatorios() => NavigationRequested?.Invoke("Relatorios");
 }

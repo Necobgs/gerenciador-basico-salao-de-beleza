@@ -114,7 +114,7 @@ public class AgendamentoService : IAgendamentoService
                 Comanda = comanda,
                 Tipo = TipoItemComanda.Servico,
                 ServicoId = servico.Id,
-                Descricao = servico.Descricao,
+                Descricao = servico.NomeExibicao,
                 Quantidade = 1,
                 ValorUnitario = servico.Valor
             });

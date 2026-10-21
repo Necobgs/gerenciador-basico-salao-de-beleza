@@ -66,6 +66,8 @@ public class AppDbContext : DbContext
         {
             entity.HasKey(s => s.Id);
             entity.Property(s => s.Descricao).IsRequired().HasMaxLength(150);
+            entity.Property(s => s.Especificacao).HasMaxLength(100);
+            entity.Property(s => s.DuracaoFormatada).HasMaxLength(20);
             entity.Property(s => s.Valor).HasPrecision(18, 2);
 
             entity.HasQueryFilter(s => s.DeletedAt == null);

@@ -16,10 +16,14 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 - **Soft Delete:** Exclusão lógica com data (`DeletedAt`), garantindo que o histórico contábil e as comandas passadas permaneçam íntegras.
 
 ### ✂️ 2. Módulo de Serviços e Produtos
-- **Catálogo de Serviços:** Descrição, valor e duração estimada em minutos (utilizada para prever a duração da agenda).
-- **Catálogo de Produtos:** Descrição, valor de venda e controle simples de estoque.
-- **Soft Delete:** Desativação segura de serviços e produtos para não corromper comandas já emitidas.
-- **Dados Iniciais (Seed):** Inicialização automática com serviços e produtos comuns de salão para teste imediato.
+- **Catálogo de Serviços em Cards:** Interface moderna no estilo Rosé Studio com cards visuais responsivos, ícone temático de corte/tesoura em tom blush/terracota suave, duração estimada com ícone de relógio, valor monetário em destaque e contador de serviços em tempo real.
+- **Busca Rápida de Serviços:** Filtragem instantânea e reativa por nome ou descrição do serviço.
+- **Modais Dedicados e Máscaras para Serviços:** Modais modernos para inclusão e edição de serviços com máscara decimal em tempo real no campo de valor (`R$`), máscara numérica no tempo estimado (min), validação defensiva em duas camadas e diálogo de confirmação seguro para exclusão.
+- **Catálogo de Produtos em Cards:** Interface moderna no estilo Rosé Studio com cards visuais responsivos, ícone temático verde sálvia, valor em destaque e contadores em tempo real.
+- **Busca Rápida de Produtos:** Filtragem instantânea por nome ou descrição do produto.
+- **Modais Dedicados e Máscaras para Produtos:** Modais modernos para inclusão e edição de produtos com máscara decimal em tempo real no campo de valor (`R$`), além de diálogo de confirmação seguro para exclusão.
+- **Soft Delete:** Desativação segura de serviços e produtos (`DeletedAt`) para não corromper comandas e agendamentos já emitidos.
+- **Dados Iniciais (Seed):** Inicialização automática com serviços de estética/cabelo e cosméticos comuns para teste imediato.
 
 ### 📅 3. Módulo de Agendamentos (Agenda Inteligente)
 - **Seleção Flexível:** Associação de um cliente a múltiplos serviços.
@@ -29,13 +33,19 @@ O software foi concebido para funcionar de forma **100% local**, simples e robus
 - **Hard Delete:** Exclusão física definitiva de agendamentos e cancelamento automático de vínculos abertos.
 
 ### 🧾 4. Módulo de Comandas & Vendas
-- **Fluxo de Atendimento Ágil:** Antes de abrir uma nova comanda, exibe as agendas pendentes do dia (que já possuem sua comanda prévia pronta).
-- **Comandas Avulsas:** Suporte à abertura de comanda sem agendamento prévio.
-- **Itens Dinâmicos:** Adição de produtos e serviços a qualquer momento com snapshot do preço.
-- **Edição Flexível de Preços:** Permite alterar o preço cobrado e a quantidade de qualquer item enquanto a comanda estiver aberta.
-- **Regra de Bloqueio Estrito:** Uma vez finalizada (confirmada) a comanda, **nenhuma alteração é permitida**, congelando os valores contábeis.
-- **Finalização & Conclusão:** Ao fechar a comanda, o agendamento correspondente é marcado como concluído.
-- **Hard Delete:** Exclusão física definitiva de comandas e itens cancelados/estornados.
+- **Design Moderno Inspirado no Rosé Studio:** Interface moderna em cards elegantes com bordas arredondadas, paleta suave Rosé (`#F7EBE5`), badges temáticas de status (`Aberta` em terracota suave, `Paga` em verde menta com ícone de cadeado), resumo de itens e data do atendimento.
+- **Filtros por Abas Interativas e Busca Completa:** Alternância instantânea entre as abas **Todas**, **Abertas** e **Pagas**, acompanhadas de contador dinâmico, seletor de calendário (**DatePicker**) para filtrar comandas por data específica (com botão de limpeza rápida) e busca reativa por número da comanda, nome do cliente, itens inclusos ou data (ex.: `20/10/2026`).
+- **Fluxo de Atendimento Ágil & Modal de Agendas do Dia:** Ao clicar em "+ Nova comanda", exibe uma listagem das agendas pendentes da data selecionada com botão direto de "Atender", além da opção funcional "+ Criar comanda do zero" para clientes sem agendamento prévio.
+- **Modal Completo de Edição & Fechamento:**
+  - Seleção de cliente via ComboBox com busca.
+  - **Busca Rápida de Serviços e Produtos pelo Nome:** Campo de busca reativo que filtra o catálogo de serviços e produtos instantaneamente conforme a digitação.
+  - **Área Rolável Dedicada para Itens da Comanda:** Contêiner rolável isolado com altura máxima definida para os itens da comanda, garantindo que adicionar múltiplos serviços e produtos não expanda o modal desproporcionalmente.
+  - Edição inline de preços unitários e quantidades enquanto a comanda estiver aberta.
+  - Máscara monetária em tempo real (`helpers:MaskHelper.Mask="Currency"`) que aceita digitação com ponto (`.`) ou vírgula (`,`) e formatação progressiva estilo bancário (`R$ 0,00`).
+  - Duração total calculada em tempo real com formatação inteligente em horas e minutos (ex.: `2h 30min` ou `3h 00min`), eliminando exibição crua de minutos excessivos.
+- **Regra de Bloqueio Estrito (Read-Only):** Comandas com status `Paga` são abertas em modo de visualização estrita, desabilitando alterações de itens, clientes e valores para proteger a integridade contábil.
+- **Finalização & Conclusão Automática:** Botão "Finalizar e receber" registra a data de encerramento, fixa o valor total e atualiza o agendamento vinculado para `Concluido`.
+- **Hard Delete Seguro:** Diálogo de confirmação dedicado para exclusão física definitiva de comandas canceladas/estornadas.
 
 ### 📆 5. Integração com Google Agenda (Google Calendar API v3)
 - **Sincronização com o Google:** Criação automática de eventos na agenda principal do Google com título, cliente, telefone, tempo total, serviços detalhados e observações.
@@ -92,7 +102,7 @@ gerenciador-basico-salao-de-beleza/
     │   ├── Comanda.cs
     │   ├── ComandaItem.cs
     │   ├── Enums (StatusAgendamento, StatusComanda, TipoItemComanda)
-    │   └── DTOs/ (FaturamentoMensalDto, TopClienteDto)
+    │   └── DTOs/ (FaturamentoMensalDto, TopClienteDto, ComandaItemDto)
     ├── Services/                            # Regras de negócio e casos de uso
     │   ├── ClienteService.cs
     │   ├── ServicoService.cs

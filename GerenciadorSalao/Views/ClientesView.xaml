@@ -148,13 +148,16 @@
                                            VerticalAlignment="Center" 
                                            Margin="0,0,8,0"/>
 
-                            <TextBox Grid.Column="1"
+                            <TextBox x:Name="TxtBuscaClientes"
+                                     Grid.Column="1"
                                      Text="{Binding TermoBusca, UpdateSourceTrigger=PropertyChanged}"
                                      FontSize="12"
                                      Foreground="{StaticResource BrushTextPrimary}"
                                      Background="Transparent"
                                      BorderThickness="0"
-                                     VerticalAlignment="Center"/>
+                                     Padding="0"
+                                     Margin="0"
+                                     VerticalContentAlignment="Center"/>
 
                             <!-- Placeholder Text -->
                             <TextBlock Grid.Column="1"
@@ -162,14 +165,20 @@
                                        FontSize="12"
                                        Foreground="{StaticResource BrushTextSecondary}"
                                        VerticalAlignment="Center"
+                                       Padding="0"
+                                       Margin="0"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding TermoBusca}" Value="">
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding TermoBusca}" Value=""/>
+                                                    <Condition Binding="{Binding IsKeyboardFocused, ElementName=TxtBuscaClientes}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
+                                            </MultiDataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
@@ -391,13 +400,18 @@
         </ScrollViewer>
 
         <!-- ===================== MODAL: NOVO CLIENTE / EDITAR CLIENTE ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsModalClienteAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsModalClienteAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalCliente_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="460" 
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>
@@ -512,7 +526,8 @@
         </Grid>
 
         <!-- ===================== MODAL: HISTÓRICO DO CLIENTE ===================== -->
-        <Grid Background="#55000000" Visibility="{Binding IsHistoricoAberto, Converter={StaticResource BoolToVis}}">
+        <Grid Visibility="{Binding IsHistoricoAberto, Converter={StaticResource BoolToVis}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharHistorico_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
                     Width="520" 
@@ -520,6 +535,10 @@
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>

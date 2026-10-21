@@ -4,7 +4,7 @@ namespace GerenciadorSalao.Services;
 
 public interface IServicoService
 {
-    Task<List<Servico>> ObterTodosAsync(bool apenasAtivos = true);
+    Task<List<Servico>> ObterTodosAsync(string? termoBusca = null, bool apenasAtivos = true);
     Task<Servico?> ObterPorIdAsync(int id);
     Task<Servico> AdicionarAsync(Servico servico);
     Task AtualizarAsync(Servico servico);

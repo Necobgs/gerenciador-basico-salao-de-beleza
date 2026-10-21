@@ -8,8 +8,26 @@ using GerenciadorSalao.Services;
 
 namespace GerenciadorSalao.ViewModels;
 
-public partial class ProdutosViewModel : ObservableObject
+public partial class ProdutosViewModel : ObservableObject, IModalHost
 {
+    public bool IsModalAberto => IsModalProdutoAberto || IsModalExcluirAberto;
+
+    public void FecharModalAtivo()
+    {
+        if (IsModalProdutoAberto) FecharModalProduto();
+        if (IsModalExcluirAberto) FecharModalExcluir();
+    }
+
+    partial void OnIsModalProdutoAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
+    partial void OnIsModalExcluirAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
     private readonly IProdutoService _produtoService;
     private static readonly CultureInfo PtBrCulture = new("pt-BR");
 

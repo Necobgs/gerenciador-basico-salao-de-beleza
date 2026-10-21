@@ -1,5 +1,8 @@
+using System;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GerenciadorSalao.Helpers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GerenciadorSalao.ViewModels;
@@ -23,10 +26,24 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSidebarOpen = true;
 
+    [ObservableProperty]
+    private bool _isModalAberto;
+
     [RelayCommand]
     public void ToggleSidebar()
     {
+        // Se houver modal aberto, não permite recolher/expandir sidebar
+        if (IsModalAberto) return;
         IsSidebarOpen = !IsSidebarOpen;
+    }
+
+    [RelayCommand]
+    public void FecharModalAtivo()
+    {
+        if (CurrentView is IModalHost host && host.IsModalAberto)
+        {
+            host.FecharModalAtivo();
+        }
     }
 
     public MainViewModel(IServiceProvider serviceProvider)
@@ -39,9 +56,54 @@ public partial class MainViewModel : ObservableObject
         Navigate("Dashboard");
     }
 
+    partial void OnCurrentViewChanging(object? oldValue, object? newValue)
+    {
+        if (oldValue is INotifyPropertyChanged oldInpc)
+        {
+            oldInpc.PropertyChanged -= CurrentView_PropertyChanged;
+        }
+
+        if (oldValue is ComandasViewModel oldComandas)
+        {
+            oldComandas.IsItemPopupOpen = false;
+            oldComandas.IsCalendarPopupOpen = false;
+        }
+
+        if (oldValue is IModalHost oldHost && oldHost.IsModalAberto)
+        {
+            oldHost.FecharModalAtivo();
+        }
+    }
+
+    partial void OnCurrentViewChanged(object? value)
+    {
+        if (value is INotifyPropertyChanged inpc)
+        {
+            inpc.PropertyChanged += CurrentView_PropertyChanged;
+        }
+
+        AtualizarStatusModal();
+    }
+
+    private void CurrentView_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IModalHost.IsModalAberto))
+        {
+            AtualizarStatusModal();
+        }
+    }
+
+    private void AtualizarStatusModal()
+    {
+        IsModalAberto = (CurrentView as IModalHost)?.IsModalAberto ?? false;
+    }
+
     [RelayCommand]
     public void Navigate(string target)
     {
+        // Impede qualquer navegação se houver um modal em aberto
+        if (IsModalAberto) return;
+
         CurrentNavTag = target;
 
         switch (target)
