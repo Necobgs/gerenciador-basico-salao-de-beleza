@@ -186,8 +186,8 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
             foreach (var ag in agendamentosDb)
             {
-                var nomeCli = ag.Cliente?.Nome ?? "Cliente";
-                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
+                var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente";
+                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
                 var valorTotal = ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
@@ -370,13 +370,13 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
             // Carrega Clientes
             var clientes = await _clienteService.ObterTodosAsync();
             ClientesDisponiveis.Clear();
-            foreach (var c in clientes.OrderBy(c => c.Nome))
+            foreach (var c in clientes.OrderBy(c => c.NomeExibicao))
                 ClientesDisponiveis.Add(c);
 
             // Carrega Serviços
             var servicos = await _servicoService.ObterTodosAsync(apenasAtivos: true);
             ServicosDisponiveis.Clear();
-            foreach (var s in servicos.OrderBy(s => s.Descricao))
+            foreach (var s in servicos.OrderBy(s => s.NomeExibicao))
                 ServicosDisponiveis.Add(s);
 
             ClienteSelecionado = null;

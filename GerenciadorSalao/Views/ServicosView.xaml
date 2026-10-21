@@ -218,8 +218,8 @@
                                                            VerticalAlignment="Center"/>
                                         </Border>
 
-                                        <!-- Nome / Descrição do Serviço -->
-                                        <TextBlock Text="{Binding Descricao}" 
+                                        <!-- Nome / Descrição do Serviço com Especificação -->
+                                        <TextBlock Text="{Binding NomeExibicao}" 
                                                    FontSize="16" 
                                                    FontWeight="SemiBold" 
                                                    Foreground="{StaticResource BrushTextPrimary}" 
@@ -347,6 +347,10 @@
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>
@@ -380,12 +384,34 @@
 
                     <!-- Campos do Formulário -->
                     <StackPanel Grid.Row="1">
-                        <!-- Campo Nome / Descrição -->
-                        <TextBlock Text="Nome / descrição" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <!-- Campo Descrição -->
+                        <TextBlock Text="Descrição" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
                         <TextBox Style="{StaticResource ModalTextBoxStyle}" 
                                  Text="{Binding FormDescricao, UpdateSourceTrigger=PropertyChanged}" 
                                  MaxLength="100"
                                  Margin="0,0,0,14"/>
+
+                        <!-- Campo Especificação (Opcional) -->
+                        <TextBlock Text="Especificação (opcional)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource ModalTextBoxStyle}" 
+                                 Text="{Binding FormEspecificacao, UpdateSourceTrigger=PropertyChanged}" 
+                                 MaxLength="100"
+                                 Margin="0,0,0,3"/>
+                        <TextBlock Text="{Binding NomeExibicaoPreview, StringFormat='{}Exibição: {0}'}" 
+                                   FontSize="11" 
+                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                   Margin="0,0,0,14">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding NomeExibicaoPreview}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                         <!-- Campo Valor (R$) com Máscara Monetária em Tempo Real -->
                         <TextBlock Text="Valor (R$)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
@@ -396,7 +422,7 @@
                                  Margin="0,0,0,14"/>
 
                         <!-- Campo Tempo Estimado com Suporte a Horas:Minutos ou Minutos Totais -->
-                        <TextBlock Text="Tempo estimado (horas:minutos ou minutos)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Tempo estimado (hh:mm ou minutos)" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
                         <TextBox Style="{StaticResource ModalTextBoxStyle}" 
                                  helpers:MaskHelper.Mask="Time"
                                  Text="{Binding FormDuracao, UpdateSourceTrigger=PropertyChanged}" 
@@ -456,6 +482,10 @@
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>
@@ -483,7 +513,7 @@
 
                     <!-- Mensagem Informativa de Exclusão -->
                     <TextBlock Grid.Row="1" 
-                               Text="{Binding ServicoParaExcluir.Descricao, StringFormat='{}{0}. Esta ação não pode ser desfeita. Cadastros com atendimentos vinculados são preservados.'}" 
+                               Text="{Binding ServicoParaExcluir.NomeExibicao, StringFormat='{}{0}. Esta ação não pode ser desfeita. Cadastros com atendimentos vinculados são preservados.'}" 
                                FontSize="13" 
                                Foreground="{StaticResource BrushTextSecondary}" 
                                TextWrapping="Wrap" 

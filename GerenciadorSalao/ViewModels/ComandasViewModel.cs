@@ -414,10 +414,10 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
             {
                 Tipo = TipoItemComanda.Servico,
                 Id = s.Id,
-                Nome = s.Descricao,
+                Nome = s.NomeExibicao,
                 Preco = s.Valor,
                 DuracaoMinutos = s.DuracaoMinutos,
-                DisplayText = $"[Serviço] {s.Descricao} - {s.Valor.ToString("C2", PtBrCulture)}"
+                DisplayText = $"[Serviço] {s.NomeExibicao} - {s.Valor.ToString("C2", PtBrCulture)}"
             });
         }
 
@@ -488,14 +488,14 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
         AgendamentosPendentes.Clear();
         foreach (var a in agendas)
         {
-            var servicosTexto = string.Join(" + ", a.AgendamentoServicos.Select(s => s.Servico.Descricao));
+            var servicosTexto = string.Join(" + ", a.AgendamentoServicos.Select(s => s.Servico.NomeExibicao));
             var valorTotal = a.AgendamentoServicos.Sum(s => s.Servico.Valor);
 
             AgendamentosPendentes.Add(new AgendamentoPendenteItemViewModel
             {
                 Id = a.Id,
                 ClienteId = a.ClienteId,
-                ClienteNome = a.Cliente.Nome,
+                ClienteNome = a.Cliente.NomeExibicao,
                 HorarioTexto = a.DataHora.ToString("HH:mm"),
                 ServicosTexto = servicosTexto,
                 TempoEstimadoTexto = ValidationHelper.FormatarDuracao(a.TempoTotalPrevistoMinutos),

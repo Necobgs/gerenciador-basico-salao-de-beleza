@@ -264,5 +264,26 @@ public static class MaskHelper
                 }
             }
         }
+        else if (mask == MaskType.Time)
+        {
+            if (string.IsNullOrWhiteSpace(textBox.Text)) return;
+
+            if (ValidationHelper.ValidarDuracaoServico(textBox.Text, out var mins, out _))
+            {
+                var formatado = ValidationHelper.FormatarMinutosParaHhMm(mins);
+                if (textBox.Text != formatado)
+                {
+                    _isFormatting = true;
+                    try
+                    {
+                        textBox.Text = formatado;
+                    }
+                    finally
+                    {
+                        _isFormatting = false;
+                    }
+                }
+            }
+        }
     }
 }

@@ -246,7 +246,7 @@ public class GoogleCalendarService : IGoogleCalendarService
             {
                 if (asv.Servico != null)
                 {
-                    sbDescricao.AppendLine($"- {asv.Servico.Descricao} (R$ {asv.Servico.Valor:F2})");
+                    sbDescricao.AppendLine($"- {asv.Servico.NomeExibicao} (R$ {asv.Servico.Valor:F2})");
                 }
             }
             sbDescricao.AppendLine();

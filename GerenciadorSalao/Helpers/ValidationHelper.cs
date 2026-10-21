@@ -247,14 +247,18 @@ public static class ValidationHelper
         return $"{horas}:{restoMinutos:D2} horas";
     }
 
-    public static string FormatarDuracaoParaEdicao(int minutos)
+    public static string FormatarMinutosParaHhMm(int minutos)
     {
-        if (minutos <= 0) return "1:00";
-        if (minutos < 60) return minutos.ToString();
-
+        if (minutos <= 0) return "0:00";
         var horas = minutos / 60;
         var restoMinutos = minutos % 60;
         return $"{horas}:{restoMinutos:D2}";
+    }
+
+    public static string FormatarDuracaoParaEdicao(int minutos)
+    {
+        if (minutos <= 0) return "1:00";
+        return FormatarMinutosParaHhMm(minutos);
     }
 
     public static bool ValidarValorMonetario(string? valorTexto, out decimal valorDecimal, out string? erro, string campoNome = "item")

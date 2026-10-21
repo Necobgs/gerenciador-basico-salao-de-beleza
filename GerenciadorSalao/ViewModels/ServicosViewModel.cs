@@ -80,19 +80,55 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
     private string _formDescricao = string.Empty;
 
     [ObservableProperty]
+    private string _formEspecificacao = string.Empty;
+
+    [ObservableProperty]
+    private string _nomeExibicaoPreview = string.Empty;
+
+    partial void OnFormDescricaoChanged(string value)
+    {
+        AtualizarNomeExibicaoPreview();
+    }
+
+    partial void OnFormEspecificacaoChanged(string value)
+    {
+        AtualizarNomeExibicaoPreview();
+    }
+
+    private void AtualizarNomeExibicaoPreview()
+    {
+        if (string.IsNullOrWhiteSpace(FormDescricao))
+        {
+            NomeExibicaoPreview = string.Empty;
+            return;
+        }
+
+        var espec = FormEspecificacao?.Trim();
+        if (string.IsNullOrWhiteSpace(espec))
+        {
+            NomeExibicaoPreview = FormDescricao.Trim();
+        }
+        else
+        {
+            NomeExibicaoPreview = $"{FormDescricao.Trim()} ({espec})";
+        }
+    }
+
+    [ObservableProperty]
     private string _formValor = "0,00";
 
     [ObservableProperty]
     private string _formDuracao = "1:00";
 
     [ObservableProperty]
-    private string _formDuracaoPreview = "= 1:00 hora (60 min)";
+    private string _formDuracaoPreview = "= 1:00 (60 min)";
 
     partial void OnFormDuracaoChanged(string value)
     {
         if (ValidationHelper.ValidarDuracaoServico(value, out var minutos, out _))
         {
-            FormDuracaoPreview = $"= {ValidationHelper.FormatarDuracao(minutos)} ({minutos} min)";
+            var hhmm = ValidationHelper.FormatarMinutosParaHhMm(minutos);
+            FormDuracaoPreview = $"= {hhmm} ({minutos} min)";
         }
         else
         {
@@ -145,10 +181,13 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
             {
                 Id = s.Id,
                 Descricao = s.Descricao,
+                Especificacao = s.Especificacao,
                 Valor = s.Valor,
                 ValorFormatado = s.Valor.ToString("C2", PtBrCulture),
                 DuracaoMinutos = s.DuracaoMinutos,
-                DuracaoFormatada = ValidationHelper.FormatarDuracao(s.DuracaoMinutos)
+                DuracaoFormatada = !string.IsNullOrWhiteSpace(s.DuracaoFormatada)
+                    ? s.DuracaoFormatada
+                    : ValidationHelper.FormatarMinutosParaHhMm(s.DuracaoMinutos)
             });
         }
 
@@ -165,9 +204,11 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
         ModalTitulo = "Novo serviço";
         FormServicoId = 0;
         FormDescricao = string.Empty;
+        FormEspecificacao = string.Empty;
+        NomeExibicaoPreview = string.Empty;
         FormValor = "0,00";
         FormDuracao = "1:00";
-        FormDuracaoPreview = "= 1:00 hora (60 min)";
+        FormDuracaoPreview = "= 1:00 (60 min)";
         FormMensagemErro = null;
         IsModalServicoAberto = true;
     }
@@ -181,9 +222,12 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
         ModalTitulo = "Editar serviço";
         FormServicoId = item.Id;
         FormDescricao = item.Descricao;
+        FormEspecificacao = item.Especificacao ?? string.Empty;
+        AtualizarNomeExibicaoPreview();
         FormValor = item.Valor.ToString("N2", PtBrCulture);
-        FormDuracao = ValidationHelper.FormatarDuracaoParaEdicao(item.DuracaoMinutos);
-        FormDuracaoPreview = $"= {ValidationHelper.FormatarDuracao(item.DuracaoMinutos)} ({item.DuracaoMinutos} min)";
+        var duracaoHhmm = ValidationHelper.FormatarMinutosParaHhMm(item.DuracaoMinutos);
+        FormDuracao = duracaoHhmm;
+        FormDuracaoPreview = $"= {duracaoHhmm} ({item.DuracaoMinutos} min)";
         FormMensagemErro = null;
         IsModalServicoAberto = true;
     }
@@ -220,14 +264,22 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
 
             FormMensagemErro = null;
 
+            // Traduz a duração fornecida (ex: 90) para o formato hh:mm (ex: 1:30)
+            var duracaoFormatadaHhMm = ValidationHelper.FormatarMinutosParaHhMm(duracaoMinutos);
+            FormDuracao = duracaoFormatadaHhMm;
+
+            var espec = string.IsNullOrWhiteSpace(FormEspecificacao) ? null : FormEspecificacao.Trim();
+
             if (IsModoEdicao)
             {
                 var servico = new Servico
                 {
                     Id = FormServicoId,
                     Descricao = FormDescricao.Trim(),
+                    Especificacao = espec,
                     Valor = valorDecimal,
                     DuracaoMinutos = duracaoMinutos,
+                    DuracaoFormatada = duracaoFormatadaHhMm,
                     Ativo = true
                 };
 
@@ -238,8 +290,10 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
                 var servico = new Servico
                 {
                     Descricao = FormDescricao.Trim(),
+                    Especificacao = espec,
                     Valor = valorDecimal,
                     DuracaoMinutos = duracaoMinutos,
+                    DuracaoFormatada = duracaoFormatadaHhMm,
                     Ativo = true
                 };
 
@@ -298,8 +352,10 @@ public class ServicoCardItem
 {
     public int Id { get; set; }
     public string Descricao { get; set; } = string.Empty;
+    public string? Especificacao { get; set; }
+    public string NomeExibicao => string.IsNullOrWhiteSpace(Especificacao) ? Descricao : $"{Descricao} ({Especificacao.Trim()})";
     public decimal Valor { get; set; }
     public string ValorFormatado { get; set; } = "R$ 0,00";
     public int DuracaoMinutos { get; set; }
-    public string DuracaoFormatada { get; set; } = "0 minutos";
+    public string DuracaoFormatada { get; set; } = "1:00";
 }

@@ -608,6 +608,10 @@
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>
@@ -784,6 +788,10 @@
                     Padding="26,20" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>
@@ -1456,6 +1464,10 @@
                     Padding="26,24" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="24" Direction="270" ShadowDepth="6" Opacity="0.18" Color="#201C1B"/>
                 </Border.Effect>

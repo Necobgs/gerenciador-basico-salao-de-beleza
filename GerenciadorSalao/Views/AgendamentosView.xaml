@@ -788,6 +788,10 @@
                     BorderBrush="{StaticResource BrushBorder}"
                     BorderThickness="1"
                     SnapsToDevicePixels="True">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-26"/>
+                </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="8" Opacity="0.22" Color="#302B2A"/>
                 </Border.Effect>
@@ -830,7 +834,7 @@
                         <ComboBox Tag="Selecione um cliente"
                                   ItemsSource="{Binding ClientesDisponiveis}"
                                   SelectedItem="{Binding ClienteSelecionado}"
-                                  DisplayMemberPath="Nome"
+                                  DisplayMemberPath="NomeExibicao"
                                   Style="{StaticResource FormComboBoxStyle}"
                                   Margin="0,0,0,14"/>
 
@@ -879,7 +883,7 @@
                                       Tag="Selecione um item"
                                       ItemsSource="{Binding ServicosDisponiveis}"
                                       SelectedItem="{Binding ServicoSelecionadoParaAdicionar}"
-                                      DisplayMemberPath="Descricao"
+                                      DisplayMemberPath="NomeExibicao"
                                       Style="{StaticResource FormComboBoxStyle}"/>
 
                             <Button Grid.Column="1"
@@ -903,7 +907,7 @@
 
                                             <!-- Nome e Duração do Serviço -->
                                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Descricao}" 
+                                                <TextBlock Text="{Binding NomeExibicao}" 
                                                            FontSize="13" 
                                                            FontWeight="Bold" 
                                                            Foreground="{StaticResource BrushTextPrimary}"/>

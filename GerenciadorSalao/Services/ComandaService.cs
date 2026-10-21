@@ -84,7 +84,7 @@ public class ComandaService : IComandaService
             ComandaId = comandaId,
             Tipo = TipoItemComanda.Servico,
             ServicoId = servico.Id,
-            Descricao = servico.Descricao,
+            Descricao = servico.NomeExibicao,
             Quantidade = quantidade > 0 ? quantidade : 1,
             ValorUnitario = valorFinal
         };

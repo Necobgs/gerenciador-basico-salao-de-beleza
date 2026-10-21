@@ -243,6 +243,16 @@
 
             <!-- ===================== ÁREA PRINCIPAL ===================== -->
             <Grid Grid.Column="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Panel.ZIndex" Value="1"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsModalAberto}" Value="True">
+                                <Setter Property="Panel.ZIndex" Value="1000"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="52"/> <!-- Top Header / Breadcrumb & Status -->
                     <RowDefinition Height="*"/>  <!-- Conteúdo Dinâmico -->
@@ -273,21 +283,21 @@
                     </Grid>
                 </Border>
 
+                <!-- Camada escurecida sobre o Top Header quando modal estiver aberto -->
+                <Grid Grid.Row="0"
+                      Background="#55000000"
+                      Visibility="{Binding IsModalAberto, Converter={StaticResource BooleanToVisibilityConverter}}"
+                      Panel.ZIndex="10"
+                      Cursor="Hand"
+                      PreviewMouseLeftButtonDown="BackdropSidebar_PreviewMouseLeftButtonDown"/>
+
                 <!-- Área Onde a View Atual é Carregada Dinamicamente -->
-                <ContentControl Grid.Row="1" Content="{Binding CurrentView}"/>
+                <ContentControl Grid.Row="1" Content="{Binding CurrentView}" Panel.ZIndex="20"/>
             </Grid>
 
-            <!-- ===================== CAMADAS DE BLOQUEIO EXTERNO (SIDEBAR E HEADER) ===================== -->
+            <!-- ===================== CAMADAS DE BLOQUEIO EXTERNO (SIDEBAR) ===================== -->
             <!-- Bloqueio escurecido sobre a Sidebar (Coluna 0) -->
             <Grid Grid.Column="0" 
-                  Background="#55000000"
-                  Visibility="{Binding IsModalAberto, Converter={StaticResource BooleanToVisibilityConverter}}"
-                  Panel.ZIndex="999"
-                  Cursor="Hand"
-                  PreviewMouseLeftButtonDown="BackdropSidebar_PreviewMouseLeftButtonDown"/>
-
-            <!-- Bloqueio escurecido sobre o Top Header (Coluna 1, Linha 0) -->
-            <Grid Grid.Column="1" VerticalAlignment="Top" Height="52"
                   Background="#55000000"
                   Visibility="{Binding IsModalAberto, Converter={StaticResource BooleanToVisibilityConverter}}"
                   Panel.ZIndex="999"

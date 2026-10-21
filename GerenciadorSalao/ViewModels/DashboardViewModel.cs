@@ -296,8 +296,8 @@ public partial class DashboardViewModel : ObservableObject
             var agendaList = new List<AgendaItemDashboard>();
             foreach (var ag in agendamentosHojeLista.OrderBy(a => a.DataHora))
             {
-                var nomeCli = ag.Cliente?.Nome ?? "Cliente avulso";
-                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.Descricao ?? "Serviço"));
+                var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente avulso";
+                var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
                 var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0

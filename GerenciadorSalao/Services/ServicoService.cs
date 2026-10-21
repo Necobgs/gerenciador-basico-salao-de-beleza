@@ -24,10 +24,11 @@ public class ServicoService : IServicoService
         if (!string.IsNullOrWhiteSpace(termoBusca))
         {
             var termo = termoBusca.Trim().ToLower();
-            query = query.Where(s => s.Descricao.ToLower().Contains(termo));
+            query = query.Where(s => s.Descricao.ToLower().Contains(termo) ||
+                                     (s.Especificacao != null && s.Especificacao.ToLower().Contains(termo)));
         }
 
-        return await query.OrderBy(s => s.Descricao).ToListAsync();
+        return await query.OrderBy(s => s.Descricao).ThenBy(s => s.Especificacao).ToListAsync();
     }
 
     public async Task<Servico?> ObterPorIdAsync(int id)
@@ -49,6 +50,11 @@ public class ServicoService : IServicoService
             servico.DuracaoMinutos = 30;
 
         servico.Descricao = servico.Descricao.Trim();
+        servico.Especificacao = string.IsNullOrWhiteSpace(servico.Especificacao) ? null : servico.Especificacao.Trim();
+        if (string.IsNullOrWhiteSpace(servico.DuracaoFormatada))
+        {
+            servico.DuracaoFormatada = ValidationHelper.FormatarMinutosParaHhMm(servico.DuracaoMinutos);
+        }
 
         _context.Servicos.Add(servico);
         await _context.SaveChangesAsync();
@@ -68,8 +74,12 @@ public class ServicoService : IServicoService
             throw new InvalidOperationException("Serviço não encontrado para atualização.");
 
         existente.Descricao = servico.Descricao.Trim();
+        existente.Especificacao = string.IsNullOrWhiteSpace(servico.Especificacao) ? null : servico.Especificacao.Trim();
         existente.Valor = servico.Valor;
         existente.DuracaoMinutos = servico.DuracaoMinutos > 0 ? servico.DuracaoMinutos : 30;
+        existente.DuracaoFormatada = string.IsNullOrWhiteSpace(servico.DuracaoFormatada)
+            ? ValidationHelper.FormatarMinutosParaHhMm(existente.DuracaoMinutos)
+            : servico.DuracaoFormatada;
         existente.Ativo = servico.Ativo;
 
         await _context.SaveChangesAsync();
