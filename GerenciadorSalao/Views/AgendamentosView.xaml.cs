@@ -19,4 +19,13 @@ public partial class AgendamentosView : UserControl
             e.Handled = true;
         }
     }
+
+    private void FecharModalExcluir_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is AgendamentosViewModel vm)
+        {
+            vm.FecharModalExcluirCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
 }

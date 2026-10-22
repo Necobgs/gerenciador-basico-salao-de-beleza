@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GerenciadorSalao.Helpers;
@@ -28,23 +27,30 @@ public class AgendamentoListItemViewModel
 
 public partial class AgendamentosViewModel : ObservableObject, IModalHost
 {
-    public bool IsModalAberto => IsModalNovoAgendamentoAberto;
+    private readonly IAgendamentoService _agendamentoService;
+    private readonly IClienteService _clienteService;
+    private readonly IServicoService _servicoService;
+    private readonly IComandaService _comandaService;
+
+    public bool IsModalAberto => IsModalNovoAgendamentoAberto || IsModalExcluirAberto;
 
     public void FecharModalAtivo()
     {
-        FecharModalNovoAgendamento();
+        if (IsModalExcluirAberto) FecharModalExcluir();
+        if (IsModalNovoAgendamentoAberto) FecharModalNovoAgendamento();
     }
 
     partial void OnIsModalNovoAgendamentoAbertoChanged(bool value)
     {
         OnPropertyChanged(nameof(IsModalAberto));
     }
-    private readonly IAgendamentoService _agendamentoService;
-    private readonly IClienteService _clienteService;
-    private readonly IServicoService _servicoService;
-    private readonly IComandaService _comandaService;
 
-    public Action<string>? NavigationRequested { get; set; }
+    partial void OnIsModalExcluirAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
+    public Action<string, object?>? NavigationRequested { get; set; }
 
     [ObservableProperty]
     private string _titulo = "Agenda";
@@ -81,12 +87,38 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
     public string DataSelecionadaFormatada => DataSelecionada.ToString("dd/MM/yyyy");
 
-    // ===================== PROPRIEDADES DO MODAL NOVO AGENDAMENTO =====================
+    // ===================== PROPRIEDADES DO MODAL (NOVO / EDITAR) =====================
     [ObservableProperty]
     private bool _isModalNovoAgendamentoAberto;
 
     [ObservableProperty]
+    private int? _agendamentoEmEdicaoId;
+
+    public bool IsModoEdicao => AgendamentoEmEdicaoId.HasValue;
+
+    [ObservableProperty]
+    private string _modalTitulo = "Novo agendamento";
+
+    [ObservableProperty]
+    private string _modalSubtitulo = "Dados do atendimento";
+
+    [ObservableProperty]
+    private string _botaoSalvarTexto = "Salvar agendamento";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TemMensagemErroModal))]
+    private string? _mensagemErroModal;
+
+    public bool TemMensagemErroModal => !string.IsNullOrWhiteSpace(MensagemErroModal);
+
+    [ObservableProperty]
     private Cliente? _clienteSelecionado;
+
+    [ObservableProperty]
+    private DateTime _novaData = DateTime.Today;
+
+    [ObservableProperty]
+    private string _novaHoraTexto = "09:00";
 
     [ObservableProperty]
     private string _novaDataHoraTexto = string.Empty;
@@ -112,6 +144,13 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     public ObservableCollection<Cliente> ClientesDisponiveis { get; } = new();
     public ObservableCollection<Servico> ServicosDisponiveis { get; } = new();
     public ObservableCollection<Servico> ServicosSelecionadosParaNovo { get; } = new();
+
+    // ===================== PROPRIEDADES DO MODAL DE EXCLUSÃO =====================
+    [ObservableProperty]
+    private bool _isModalExcluirAberto;
+
+    [ObservableProperty]
+    private AgendamentoListItemViewModel? _agendamentoParaExcluir;
 
     public AgendamentosViewModel(
         IAgendamentoService agendamentoService,
@@ -340,65 +379,140 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
     // ===================== AÇÕES DOS CARDS =====================
     [RelayCommand]
-    public async Task AbrirComandaAsync(int agendamentoId)
+    public void AbrirComanda(int agendamentoId)
     {
-        NavigationRequested?.Invoke("Comandas");
-    }
-
-    [RelayCommand]
-    public async Task ExcluirAgendamentoAsync(int agendamentoId)
-    {
-        var confirm = MessageBox.Show(
-            "Deseja realmente cancelar este agendamento?",
-            "Cancelar Agendamento",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-
-        if (confirm == MessageBoxResult.Yes)
+        var item = TodosAgendamentos.FirstOrDefault(a => a.Id == agendamentoId);
+        if (item?.ComandaId != null && item.ComandaId > 0)
         {
-            await _agendamentoService.ExcluirAgendamentoAsync(agendamentoId);
-            await CarregarAgendamentosAsync();
+            NavigationRequested?.Invoke("Comandas", item.ComandaId.Value);
+        }
+        else
+        {
+            NavigationRequested?.Invoke("Comandas", ("agendamento", agendamentoId));
         }
     }
 
-    // ===================== MODAL NOVO AGENDAMENTO =====================
+    [RelayCommand]
+    public void SolicitarExcluirAgendamento(AgendamentoListItemViewModel? item)
+    {
+        if (item == null) return;
+        AgendamentoParaExcluir = item;
+        IsModalExcluirAberto = true;
+    }
+
+    [RelayCommand]
+    public void FecharModalExcluir()
+    {
+        IsModalExcluirAberto = false;
+        AgendamentoParaExcluir = null;
+    }
+
+    [RelayCommand]
+    public async Task ConfirmarExclusaoAsync()
+    {
+        if (AgendamentoParaExcluir == null) return;
+        var id = AgendamentoParaExcluir.Id;
+        FecharModalExcluir();
+        await _agendamentoService.ExcluirAgendamentoAsync(id);
+        await CarregarAgendamentosAsync();
+    }
+
+    // ===================== MODAL NOVO / EDITAR AGENDAMENTO =====================
     [RelayCommand]
     public async Task AbrirModalNovoAgendamentoAsync()
     {
         try
         {
-            // Carrega Clientes
-            var clientes = await _clienteService.ObterTodosAsync();
-            ClientesDisponiveis.Clear();
-            foreach (var c in clientes.OrderBy(c => c.NomeExibicao))
-                ClientesDisponiveis.Add(c);
+            MensagemErroModal = null;
+            AgendamentoEmEdicaoId = null;
+            ModalTitulo = "Novo agendamento";
+            ModalSubtitulo = "Dados do atendimento";
+            BotaoSalvarTexto = "Salvar agendamento";
 
-            // Carrega Serviços
-            var servicos = await _servicoService.ObterTodosAsync(apenasAtivos: true);
-            ServicosDisponiveis.Clear();
-            foreach (var s in servicos.OrderBy(s => s.NomeExibicao))
-                ServicosDisponiveis.Add(s);
+            await CarregarListasFormularioAsync();
 
-            ClienteSelecionado = null;
-            ServicoSelecionadoParaAdicionar = null;
+            ClienteSelecionado = ClientesDisponiveis.FirstOrDefault();
+            ServicoSelecionadoParaAdicionar = ServicosDisponiveis.FirstOrDefault();
             ServicosSelecionadosParaNovo.Clear();
             NovaObservacao = string.Empty;
 
+            NovaData = DataSelecionada.Date;
+            NovaHoraTexto = "09:00";
             NovaDataHoraTexto = $"{DataSelecionada:dd/MM/yyyy} 09:00";
-            AtualizarTotaisNovoAgendamento();
 
+            AtualizarTotaisNovoAgendamento();
             IsModalNovoAgendamentoAberto = true;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Erro ao carregar dados do agendamento: {ex.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            MensagemErroModal = $"Erro ao preparar formulário: {ex.Message}";
+            IsModalNovoAgendamentoAberto = true;
         }
+    }
+
+    [RelayCommand]
+    public async Task AbrirModalEditarAgendamentoAsync(int agendamentoId)
+    {
+        try
+        {
+            MensagemErroModal = null;
+            var agendamentoDb = await _agendamentoService.ObterPorIdAsync(agendamentoId);
+            if (agendamentoDb == null) return;
+
+            AgendamentoEmEdicaoId = agendamentoDb.Id;
+            ModalTitulo = "Editar agendamento";
+            ModalSubtitulo = "Altere o cliente, horário ou os serviços previstos";
+            BotaoSalvarTexto = "Atualizar agendamento";
+
+            await CarregarListasFormularioAsync();
+
+            ClienteSelecionado = ClientesDisponiveis.FirstOrDefault(c => c.Id == agendamentoDb.ClienteId);
+            ServicoSelecionadoParaAdicionar = ServicosDisponiveis.FirstOrDefault();
+            NovaObservacao = agendamentoDb.Observacao ?? string.Empty;
+
+            NovaData = agendamentoDb.DataHora.Date;
+            NovaHoraTexto = agendamentoDb.DataHora.ToString("HH:mm");
+            NovaDataHoraTexto = agendamentoDb.DataHora.ToString("dd/MM/yyyy HH:mm");
+
+            ServicosSelecionadosParaNovo.Clear();
+            foreach (var asv in agendamentoDb.AgendamentoServicos)
+            {
+                var s = ServicosDisponiveis.FirstOrDefault(x => x.Id == asv.ServicoId) ?? asv.Servico;
+                if (s != null)
+                {
+                    ServicosSelecionadosParaNovo.Add(s);
+                }
+            }
+
+            AtualizarTotaisNovoAgendamento();
+            IsModalNovoAgendamentoAberto = true;
+        }
+        catch (Exception ex)
+        {
+            MensagemErroModal = $"Erro ao carregar agendamento: {ex.Message}";
+            IsModalNovoAgendamentoAberto = true;
+        }
+    }
+
+    private async Task CarregarListasFormularioAsync()
+    {
+        var clientes = await _clienteService.ObterTodosAsync();
+        ClientesDisponiveis.Clear();
+        foreach (var c in clientes.OrderBy(c => c.NomeExibicao))
+            ClientesDisponiveis.Add(c);
+
+        var servicos = await _servicoService.ObterTodosAsync(apenasAtivos: true);
+        ServicosDisponiveis.Clear();
+        foreach (var s in servicos.OrderBy(s => s.NomeExibicao))
+            ServicosDisponiveis.Add(s);
     }
 
     [RelayCommand]
     public void FecharModalNovoAgendamento()
     {
         IsModalNovoAgendamentoAberto = false;
+        AgendamentoEmEdicaoId = null;
+        MensagemErroModal = null;
     }
 
     [RelayCommand]
@@ -409,7 +523,7 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
         ServicosSelecionadosParaNovo.Add(ServicoSelecionadoParaAdicionar);
         AtualizarTotaisNovoAgendamento();
-        ServicoSelecionadoParaAdicionar = null;
+        MensagemErroModal = null;
     }
 
     [RelayCommand]
@@ -432,45 +546,77 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     [RelayCommand]
     public async Task SalvarNovoAgendamentoAsync()
     {
+        MensagemErroModal = null;
+
         if (ClienteSelecionado == null)
         {
-            MessageBox.Show("Por favor, selecione um cliente.", "Atenção", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MensagemErroModal = "Por favor, selecione um cliente.";
             return;
         }
 
         if (ServicosSelecionadosParaNovo.Count == 0)
         {
-            MessageBox.Show("Por favor, adicione pelo menos um serviço ao agendamento.", "Atenção", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MensagemErroModal = "Por favor, adicione pelo menos um serviço ao agendamento.";
             return;
         }
 
         DateTime dataHoraAgendamento;
-        if (!DateTime.TryParseExact(
-                NovaDataHoraTexto?.Trim(), 
-                new[] { "dd/MM/yyyy HH:mm", "dd/MM/yyyy H:mm", "dd/MM/yyyy", "yyyy-MM-dd HH:mm" }, 
-                CultureInfo.InvariantCulture, 
-                DateTimeStyles.None, 
-                out dataHoraAgendamento))
+        var horaLimpa = NovaHoraTexto?.Trim() ?? "";
+
+        // Validação estrita de horário HH:mm
+        var partesHora = horaLimpa.Split(':');
+        if (partesHora.Length == 2 &&
+            int.TryParse(partesHora[0], out var hora) &&
+            int.TryParse(partesHora[1], out var minuto) &&
+            hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59)
         {
-            dataHoraAgendamento = DataSelecionada.Date.AddHours(9);
+            dataHoraAgendamento = NovaData.Date.AddHours(hora).AddMinutes(minuto);
+        }
+        else if (DateTime.TryParseExact(
+                    NovaDataHoraTexto?.Trim(),
+                    new[] { "dd/MM/yyyy HH:mm", "dd/MM/yyyy H:mm", "yyyy-MM-dd HH:mm" },
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var dtParsed))
+        {
+            dataHoraAgendamento = dtParsed;
+        }
+        else
+        {
+            MensagemErroModal = "Informe um horário válido no formato HH:mm (ex: 09:30).";
+            return;
         }
 
         try
         {
             var servicoIds = ServicosSelecionadosParaNovo.Select(s => s.Id).ToList();
-            await _agendamentoService.CriarAgendamentoAsync(
-                ClienteSelecionado.Id,
-                dataHoraAgendamento,
-                servicoIds,
-                NovaObservacao);
+
+            if (AgendamentoEmEdicaoId.HasValue)
+            {
+                await _agendamentoService.AtualizarAgendamentoAsync(
+                    AgendamentoEmEdicaoId.Value,
+                    ClienteSelecionado.Id,
+                    dataHoraAgendamento,
+                    servicoIds,
+                    NovaObservacao);
+            }
+            else
+            {
+                await _agendamentoService.CriarAgendamentoAsync(
+                    ClienteSelecionado.Id,
+                    dataHoraAgendamento,
+                    servicoIds,
+                    NovaObservacao);
+            }
 
             IsModalNovoAgendamentoAberto = false;
+            AgendamentoEmEdicaoId = null;
             DataSelecionada = dataHoraAgendamento.Date;
             await CarregarAgendamentosAsync();
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Não foi possível salvar o agendamento: {ex.Message}", "Erro ao Salvar", MessageBoxButton.OK, MessageBoxImage.Error);
+            MensagemErroModal = $"Não foi possível salvar o agendamento: {ex.Message}";
         }
     }
 }

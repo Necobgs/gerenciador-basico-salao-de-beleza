@@ -50,7 +50,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly IComandaService _comandaService;
     private readonly IClienteService _clienteService;
 
-    public Action<string>? NavigationRequested { get; set; }
+    public Action<string, object?>? NavigationRequested { get; set; }
 
     [ObservableProperty]
     private decimal _faturamentoHoje;
@@ -569,17 +569,24 @@ public partial class DashboardViewModel : ObservableObject
 
     // Comandos de Navegação Entre Telas
     [RelayCommand]
-    public void IrParaAgenda() => NavigationRequested?.Invoke("Agendamentos");
+    public void IrParaAgenda() => NavigationRequested?.Invoke("Agendamentos", DataSelecionada);
 
     [RelayCommand]
-    public void NovoAgendamento() => NavigationRequested?.Invoke("Agendamentos");
+    public void NovoAgendamento() => NavigationRequested?.Invoke("Agendamentos", ("novo", DataSelecionada));
 
     [RelayCommand]
-    public void IrParaComandas() => NavigationRequested?.Invoke("Comandas");
+    public void AbrirAtendimento(AgendaItemDashboard? item)
+    {
+        if (item == null) return;
+        NavigationRequested?.Invoke("Agendamentos", item.Id);
+    }
 
     [RelayCommand]
-    public void IrParaClientes() => NavigationRequested?.Invoke("Clientes");
+    public void IrParaComandas() => NavigationRequested?.Invoke("Comandas", null);
 
     [RelayCommand]
-    public void IrParaRelatorios() => NavigationRequested?.Invoke("Relatorios");
+    public void IrParaClientes() => NavigationRequested?.Invoke("Clientes", null);
+
+    [RelayCommand]
+    public void IrParaRelatorios() => NavigationRequested?.Invoke("Relatorios", null);
 }

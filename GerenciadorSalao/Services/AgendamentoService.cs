@@ -146,6 +146,105 @@ public class AgendamentoService : IAgendamentoService
         return agendamento;
     }
 
+    public async Task<Agendamento> AtualizarAgendamentoAsync(int agendamentoId, int clienteId, DateTime dataHora, List<int> servicoIds, string? observacao = null)
+    {
+        var agendamento = await _context.Agendamentos
+            .Include(a => a.Cliente)
+            .Include(a => a.AgendamentoServicos)
+                .ThenInclude(asv => asv.Servico)
+            .Include(a => a.Comanda)
+                .ThenInclude(c => c!.Itens)
+            .FirstOrDefaultAsync(a => a.Id == agendamentoId);
+
+        if (agendamento == null)
+            throw new InvalidOperationException("Agendamento não encontrado.");
+
+        var cliente = await _context.Clientes.FindAsync(clienteId);
+        if (cliente == null)
+            throw new InvalidOperationException("Cliente não encontrado.");
+
+        if (servicoIds == null || servicoIds.Count == 0)
+            throw new ArgumentException("É necessário selecionar pelo menos um serviço para o agendamento.", nameof(servicoIds));
+
+        var servicos = await _context.Servicos
+            .Where(s => servicoIds.Contains(s.Id))
+            .ToListAsync();
+
+        if (servicos.Count == 0)
+            throw new ArgumentException("Nenhum serviço válido foi localizado com os IDs informados.");
+
+        var tempoTotalMinutos = servicos.Sum(s => s.DuracaoMinutos);
+
+        agendamento.ClienteId = clienteId;
+        agendamento.Cliente = cliente;
+        agendamento.DataHora = dataHora;
+        agendamento.TempoTotalPrevistoMinutos = tempoTotalMinutos;
+        agendamento.Observacao = observacao?.Trim();
+
+        // Atualiza os serviços associados ao agendamento
+        agendamento.AgendamentoServicos.Clear();
+        foreach (var servico in servicos)
+        {
+            agendamento.AgendamentoServicos.Add(new AgendamentoServico
+            {
+                AgendamentoId = agendamento.Id,
+                Agendamento = agendamento,
+                ServicoId = servico.Id,
+                Servico = servico
+            });
+        }
+
+        // Se houver comanda vinculada e ela ainda estiver aberta, sincroniza os serviços e horário
+        if (agendamento.Comanda != null && agendamento.Comanda.Status == StatusComanda.Aberta)
+        {
+            agendamento.Comanda.ClienteId = clienteId;
+            agendamento.Comanda.DataAbertura = dataHora;
+            agendamento.Comanda.Observacao = observacao?.Trim();
+
+            // Remove itens de serviços anteriores mantendo itens de produto
+            var servicosAnteriores = agendamento.Comanda.Itens
+                .Where(i => i.Tipo == TipoItemComanda.Servico)
+                .ToList();
+
+            foreach (var item in servicosAnteriores)
+            {
+                agendamento.Comanda.Itens.Remove(item);
+            }
+
+            foreach (var servico in servicos)
+            {
+                agendamento.Comanda.Itens.Add(new ComandaItem
+                {
+                    Comanda = agendamento.Comanda,
+                    Tipo = TipoItemComanda.Servico,
+                    ServicoId = servico.Id,
+                    Descricao = servico.NomeExibicao,
+                    Quantidade = 1,
+                    ValorUnitario = servico.Valor
+                });
+            }
+
+            agendamento.Comanda.ValorTotal = agendamento.Comanda.CalcularTotalItens();
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Sincroniza atualização com o Google Agenda se houver integração ativa
+        if (!string.IsNullOrEmpty(agendamento.GoogleEventId))
+        {
+            try
+            {
+                await _googleCalendarService.AtualizarEventoAsync(agendamento);
+            }
+            catch
+            {
+                // Falhas externas não afetam a persistência local
+            }
+        }
+
+        return agendamento;
+    }
+
     public async Task AtualizarStatusAsync(int agendamentoId, StatusAgendamento status)
     {
         var agendamento = await _context.Agendamentos.FindAsync(agendamentoId);

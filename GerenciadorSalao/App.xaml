@@ -15,6 +15,47 @@
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <helpers:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
             <helpers:SidebarToModalOffsetXConverter x:Key="SidebarToModalOffsetXConverter"/>
+
+            <!-- Estilo Padrão Global do Botão Primário de Abertura de Modais (+ Novo agendamento, etc.) -->
+            <Style x:Key="PrimaryActionButtonStyle" TargetType="Button">
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Background" Value="{StaticResource BrushPrimary}"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="14,9"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter HorizontalAlignment="Center" 
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource BrushPrimaryHover}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#553732"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="border" Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

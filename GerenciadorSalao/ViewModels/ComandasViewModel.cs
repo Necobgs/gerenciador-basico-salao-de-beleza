@@ -566,6 +566,21 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
         IsModalEdicaoAberto = true;
     }
 
+    public async Task AbrirComandaPorAgendamentoIdAsync(int agendamentoId)
+    {
+        var agendamento = await _agendamentoService.ObterPorIdAsync(agendamentoId);
+        if (agendamento == null) return;
+
+        if (agendamento.Comanda != null)
+        {
+            await AbrirEditarComandaPorIdAsync(agendamento.Comanda.Id);
+        }
+        else
+        {
+            await AbrirCriarComandaDoZeroAsync(agendamento.ClienteId);
+        }
+    }
+
     [RelayCommand]
     public async Task AbrirEditarComandaAsync(ComandaListItemViewModel item)
     {

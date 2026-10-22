@@ -103,17 +103,8 @@
                     <!-- Botão Novo Cliente -->
                     <Button Grid.Column="1"
                             Command="{Binding AbrirModalNovoClienteCommand}"
-                            Background="{StaticResource BrushPrimary}"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Padding="16,9"
-                            Cursor="Hand"
+                            Style="{StaticResource PrimaryActionButtonStyle}"
                             VerticalAlignment="Center">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                             <TextBlock Text="Novo cliente" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
@@ -376,20 +367,11 @@
                                 <TextBlock Text="Nenhum cliente encontrado" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="Tente ajustar a busca ou cadastre um novo cliente no botão acima." FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,4,0,16" HorizontalAlignment="Center"/>
                                 <Button Command="{Binding AbrirModalNovoClienteCommand}"
-                                        Background="{StaticResource BrushPrimary}"
-                                        Foreground="White"
-                                        BorderThickness="0"
-                                        Padding="14,8"
-                                        Cursor="Hand"
+                                        Style="{StaticResource PrimaryActionButtonStyle}"
                                         HorizontalAlignment="Center">
-                                    <Button.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="6"/>
-                                        </Style>
-                                    </Button.Resources>
-                                    <StackPanel Orientation="Horizontal">
-                                        <ui:SymbolIcon Symbol="Add24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
-                                        <TextBlock Text="Cadastrar cliente" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Novo cliente" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

@@ -101,6 +101,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     public void Navigate(string target)
     {
+        Navigate(target, null);
+    }
+
+    public void Navigate(string target, object? parameter = null)
+    {
         // Impede qualquer navegação se houver um modal em aberto
         if (IsModalAberto) return;
 
@@ -119,6 +124,19 @@ public partial class MainViewModel : ObservableObject
                 var agendamentosVm = _serviceProvider.GetRequiredService<AgendamentosViewModel>();
                 agendamentosVm.NavigationRequested = Navigate;
                 CurrentView = agendamentosVm;
+                if (parameter is DateTime dt)
+                {
+                    agendamentosVm.DataSelecionada = dt;
+                }
+                else if (parameter is ("novo", DateTime novaDt))
+                {
+                    agendamentosVm.DataSelecionada = novaDt;
+                    _ = agendamentosVm.AbrirModalNovoAgendamentoAsync();
+                }
+                else if (parameter is int agId && agId > 0)
+                {
+                    _ = agendamentosVm.AbrirModalEditarAgendamentoAsync(agId);
+                }
                 break;
             case "Clientes":
                 CurrentPageTitle = "Clientes";
@@ -126,7 +144,16 @@ public partial class MainViewModel : ObservableObject
                 break;
             case "Comandas":
                 CurrentPageTitle = "Comandas";
-                CurrentView = _serviceProvider.GetRequiredService<ComandasViewModel>();
+                var comandasVm = _serviceProvider.GetRequiredService<ComandasViewModel>();
+                CurrentView = comandasVm;
+                if (parameter is int comandaId && comandaId > 0)
+                {
+                    _ = comandasVm.AbrirEditarComandaPorIdAsync(comandaId);
+                }
+                else if (parameter is ("agendamento", int agendamentoId))
+                {
+                    _ = comandasVm.AbrirComandaPorAgendamentoIdAsync(agendamentoId);
+                }
                 break;
             case "Servicos":
                 CurrentPageTitle = "Serviços";

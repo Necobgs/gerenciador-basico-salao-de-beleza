@@ -112,55 +112,15 @@
                                    Margin="0,3,0,0"/>
                     </StackPanel>
 
-                    <!-- Botão Nova Comanda com Transição Suave 0.5s -->
+                    <!-- Botão Nova Comanda -->
                     <Button Grid.Column="1"
                             Command="{Binding AbrirNovaComandaCommand}"
-                            Height="38"
-                            Cursor="Hand"
+                            Style="{StaticResource PrimaryActionButtonStyle}"
                             VerticalAlignment="Center">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="BtnNovaBorder"
-                                        Background="{StaticResource BrushPrimary}"
-                                        BorderBrush="#795346"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="16,8">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
-                                        <TextBlock Text="Nova comanda" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
-                                    </StackPanel>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Trigger.EnterActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="BtnNovaBorder"
-                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="#785245" Duration="0:0:0.5"/>
-                                                    <ColorAnimation Storyboard.TargetName="BtnNovaBorder"
-                                                                    Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                    To="#674438" Duration="0:0:0.5"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.EnterActions>
-                                        <Trigger.ExitActions>
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <ColorAnimation Storyboard.TargetName="BtnNovaBorder"
-                                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
-                                                                    To="#8C6558" Duration="0:0:0.5"/>
-                                                    <ColorAnimation Storyboard.TargetName="BtnNovaBorder"
-                                                                    Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)"
-                                                                    To="#795346" Duration="0:0:0.5"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </Trigger.ExitActions>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Button.Template>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
+                            <TextBlock Text="Nova comanda" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                        </StackPanel>
                     </Button>
                 </Grid>
 
@@ -576,19 +536,10 @@
                                        Margin="0,5,0,20" 
                                        HorizontalAlignment="Center"/>
                             <Button Command="{Binding AbrirNovaComandaCommand}"
-                                    Background="{StaticResource BrushPrimary}"
-                                    Foreground="White"
-                                    BorderThickness="0"
-                                    Padding="18,9"
-                                    Cursor="Hand"
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
                                     HorizontalAlignment="Center">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <ui:SymbolIcon Symbol="Add24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
+                                    <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                                     <TextBlock Text="Nova comanda" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                                 </StackPanel>
                             </Button>

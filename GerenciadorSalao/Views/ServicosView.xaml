@@ -95,17 +95,8 @@
                     <!-- Botão Novo Serviço -->
                     <Button Grid.Column="1"
                             Command="{Binding AbrirNovoServicoCommand}"
-                            Background="{StaticResource BrushPrimary}"
-                            Foreground="White"
-                            BorderThickness="0"
-                            Padding="16,9"
-                            Cursor="Hand"
+                            Style="{StaticResource PrimaryActionButtonStyle}"
                             VerticalAlignment="Center">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="8"/>
-                            </Style>
-                        </Button.Resources>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                             <TextBlock Text="Novo serviço" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
@@ -316,19 +307,10 @@
                                        Margin="0,5,0,20" 
                                        HorizontalAlignment="Center"/>
                             <Button Command="{Binding AbrirNovoServicoCommand}"
-                                    Background="{StaticResource BrushPrimary}"
-                                    Foreground="White"
-                                    BorderThickness="0"
-                                    Padding="18,9"
-                                    Cursor="Hand"
+                                    Style="{StaticResource PrimaryActionButtonStyle}"
                                     HorizontalAlignment="Center">
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="8"/>
-                                    </Style>
-                                </Button.Resources>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <ui:SymbolIcon Symbol="Add24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
+                                    <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
                                     <TextBlock Text="Novo serviço" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
                                 </StackPanel>
                             </Button>
