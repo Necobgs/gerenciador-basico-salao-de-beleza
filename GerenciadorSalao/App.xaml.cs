@@ -40,6 +40,17 @@ public partial class App : Application
 
         try
         {
+            // Configura Cultura Global pt-BR para XAML e Threads (Garante 'R$' e formatação brasileira padrão)
+            var ptBr = new System.Globalization.CultureInfo("pt-BR");
+            System.Threading.Thread.CurrentThread.CurrentCulture = ptBr;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = ptBr;
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = ptBr;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = ptBr;
+            FrameworkElement.LanguageProperty.OverrideMetadata(
+                typeof(FrameworkElement),
+                new FrameworkPropertyMetadata(System.Windows.Markup.XmlLanguage.GetLanguage("pt-BR"))
+            );
+
             base.OnStartup(e);
 
             var serviceCollection = new ServiceCollection();

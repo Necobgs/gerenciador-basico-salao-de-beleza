@@ -47,7 +47,7 @@ public class RelatorioService : IRelatorioService
         return resultado;
     }
 
-    public async Task<List<TopClienteDto>> ObterTopClientesAsync(int top = 5, int? ano = null)
+    public async Task<List<TopClienteDto>> ObterTopClientesAsync(int top = 10, int? ano = null)
     {
         var query = _context.Comandas
             .IgnoreQueryFilters()

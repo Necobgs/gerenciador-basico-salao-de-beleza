@@ -146,14 +146,18 @@ public partial class RelatoriosViewModel : ObservableObject
 
             // Filtragem pelo Período selecionado
             List<FaturamentoMensalDto> dadosFiltrados;
+            // 1. Tabela Detalhada Mês a Mês
+            var detalhados = await _relatorioService.ObterFaturamentoDetalhadoMesesAsync(AnoSelecionado);
             if (PeriodoSelecionado == "1º Semestre")
             {
                 dadosFiltrados = dadosAno.Where(d => d.Mes <= 6).ToList();
+                detalhados = detalhados.Where(d => d.Mes <= 6).ToList();
                 PeriodoTagDescricao = "1º Semestre (Jan a Jun)";
             }
             else if (PeriodoSelecionado == "2º Semestre")
             {
                 dadosFiltrados = dadosAno.Where(d => d.Mes >= 7).ToList();
+                detalhados = detalhados.Where(d => d.Mes >= 7).ToList();
                 PeriodoTagDescricao = "2º Semestre (Jul a Dez)";
             }
             else
@@ -162,21 +166,14 @@ public partial class RelatoriosViewModel : ObservableObject
                 PeriodoTagDescricao = "Ano completo (Jan a Dez)";
             }
 
-            AtualizarGrafico(dadosFiltrados);
-
-            // Tabela Detalhada Mês a Mês
-            var detalhados = await _relatorioService.ObterFaturamentoDetalhadoMesesAsync(AnoSelecionado);
-            if (PeriodoSelecionado == "1º Semestre")
-            {
-                detalhados = detalhados.Where(d => d.Mes <= 6).ToList();
-            }
-            else if (PeriodoSelecionado == "2º Semestre")
-            {
-                detalhados = detalhados.Where(d => d.Mes >= 7).ToList();
-            }
+            _dadosFiltrados = dadosFiltrados;
+            _detalhadosFiltrados = detalhados;
             MesesDetalhados = detalhados;
 
-            // Totais e Médias
+            // 2. Gráfico Dinâmico de Faturamento (Adaptativo à largura real da tela)
+            AtualizarGrafico(_dadosFiltrados, _detalhadosFiltrados, _larguraGraficoAtual);
+
+            // 3. Totais e Médias
             FaturamentoTotal = dadosFiltrados.Sum(d => d.Total);
             FaturamentoTotalTexto = FaturamentoTotal.ToString("C2", PtBrCulture);
 
@@ -191,7 +188,7 @@ public partial class RelatoriosViewModel : ObservableObject
             MediaMensalTexto = MediaMensal.ToString("C2", PtBrCulture);
 
             // Top Clientes por Faturamento
-            var topList = await _relatorioService.ObterTopClientesAsync(top: 5, ano: AnoSelecionado);
+            var topList = await _relatorioService.ObterTopClientesAsync(top: 8, ano: AnoSelecionado);
             var avatarBgCores = new[] { "#FEE9E6", "#E8F5E9", "#EDE7F6", "#E1F5FE", "#FFF3E0" };
 
             var topItems = new List<TopClienteFinanceiroItem>();
@@ -230,12 +227,29 @@ public partial class RelatoriosViewModel : ObservableObject
         }
     }
 
-    private static readonly string[] NomesMeses = 
+    private List<FaturamentoMensalDto> _dadosFiltrados = new();
+    private List<FaturamentoDetalhadoMesDto> _detalhadosFiltrados = new();
+    private double _larguraGraficoAtual = 900.0;
+
+    /// <summary>
+    /// Chamado quando a largura da tela/card é redimensionada, recalculando a distância entre os meses sem distorção.
+    /// </summary>
+    public void RedesenharGrafico(double larguraDisponivel)
+    {
+        if (larguraDisponivel <= 50) return;
+        _larguraGraficoAtual = larguraDisponivel;
+        if (_dadosFiltrados.Count > 0)
+        {
+            AtualizarGrafico(_dadosFiltrados, _detalhadosFiltrados, _larguraGraficoAtual);
+        }
+    }
+
+    private static readonly string[] NomesMeses =
         { "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez" };
-    private static readonly string[] NomesMesesCompletos = 
+    private static readonly string[] NomesMesesCompletos =
         { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" };
 
-    private void AtualizarGrafico(List<FaturamentoMensalDto> dados)
+    private void AtualizarGrafico(List<FaturamentoMensalDto> dados, List<FaturamentoDetalhadoMesDto> detalhados, double larguraTotal)
     {
         ColunasGrafico = dados.Count;
         var maxValor = dados.Count > 0 ? dados.Max(d => d.Total) : 0m;
@@ -249,14 +263,16 @@ public partial class RelatoriosViewModel : ObservableObject
         YLabel25 = FormatarValorEixo(teto * 0.25m);
         YLabel0 = "R$ 0";
 
-        const double baselineY = 125.0;
-        const double alturaUtil = 113.0;
-        const double margemEsquerda = 25.0;
-        const double larguraUtil = 450.0;
+        // Altura fixa nativa (200px) com espaçamento regular de 35px entre cada linha
+        const double baselineY = 165.0;
+        const double topY = 25.0;
+        const double alturaUtil = baselineY - topY; // 140.0
 
+        double largura = larguraTotal > 50 ? larguraTotal : 900.0;
         int n = dados.Count;
-        double stepX = n > 1 ? larguraUtil / (n - 1) : larguraUtil;
+        double columnWidth = n > 0 ? largura / n : largura;
 
+        var detalhadosDict = detalhados.ToDictionary(d => d.Mes);
         var pontos = new List<Point>();
         var mesesItems = new List<ChartMesItem>();
 
@@ -265,32 +281,43 @@ public partial class RelatoriosViewModel : ObservableObject
             var item = dados[i];
             int mesIdx = Math.Clamp(item.Mes - 1, 0, 11);
 
-            double x = margemEsquerda + (i * stepX);
+            double columnLeft = i * columnWidth;
+            double x = columnLeft + (columnWidth / 2.0);
             double ratio = teto > 0 ? (double)(item.Total / teto) : 0.0;
             double y = baselineY - (ratio * alturaUtil);
 
             pontos.Add(new Point(x, y));
 
+            detalhadosDict.TryGetValue(item.Mes, out var det);
+            int atendimentos = det?.TotalAtendimentos ?? 0;
+            decimal ticket = det?.TicketMedio ?? 0m;
+
             mesesItems.Add(new ChartMesItem
             {
                 Mes = item.Mes,
                 MesNome = NomesMeses[mesIdx],
+                MesNomeCompletoAno = $"{NomesMesesCompletos[mesIdx]} de {AnoSelecionado}",
                 Valor = item.Total,
                 ValorFormatado = item.Total.ToString("C2", PtBrCulture),
                 TooltipTexto = $"{NomesMesesCompletos[mesIdx]}/{AnoSelecionado}: {item.Total:C2}",
+                TotalAtendimentos = atendimentos,
+                TicketMedio = ticket,
+                TicketMedioFormatado = ticket.ToString("C2", PtBrCulture),
                 X = x,
-                Y = y
+                Y = y,
+                ColumnLeft = columnLeft,
+                ColumnWidth = columnWidth
             });
         }
 
         ChartMeses = mesesItems;
 
-        var (linha, area) = GerarGeometriasGrafico(pontos, baselineY);
+        var (linha, area) = GerarGeometriasGrafico(pontos, baselineY, topY);
         GraficoLinhaGeometry = linha;
         GraficoAreaGeometry = area;
     }
 
-    private static (Geometry Linha, Geometry Area) GerarGeometriasGrafico(List<Point> pontos, double baselineY)
+    private static (Geometry Linha, Geometry Area) GerarGeometriasGrafico(List<Point> pontos, double baselineY, double topY)
     {
         if (pontos.Count == 0) return (Geometry.Empty, Geometry.Empty);
 
@@ -314,11 +341,11 @@ public partial class RelatoriosViewModel : ObservableObject
 
                 var cp1 = new Point(
                     p1.X + (p2.X - p0.X) / 6.0,
-                    Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, 8.0, baselineY)
+                    Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, topY, baselineY)
                 );
                 var cp2 = new Point(
                     p2.X - (p3.X - p1.X) / 6.0,
-                    Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, 8.0, baselineY)
+                    Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, topY, baselineY)
                 );
 
                 var bezier = new BezierSegment(cp1, cp2, p2, true);
