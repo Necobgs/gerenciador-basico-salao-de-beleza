@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,7 @@ public class AgendamentoListItemViewModel
     public string StatusBg { get; set; } = "#FEE9E6";
     public string StatusFg { get; set; } = "#885B53";
     public int? ComandaId { get; set; }
+    public bool IsSincronizadoICloud { get; set; }
 }
 
 public partial class AgendamentosViewModel : ObservableObject, IModalHost
@@ -31,11 +33,13 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     private readonly IClienteService _clienteService;
     private readonly IServicoService _servicoService;
     private readonly IComandaService _comandaService;
+    private readonly IICloudSyncService _iCloudSyncService;
 
-    public bool IsModalAberto => IsModalNovoAgendamentoAberto || IsModalExcluirAberto;
+    public bool IsModalAberto => IsModalNovoAgendamentoAberto || IsModalExcluirAberto || IsModalICloudAberto;
 
     public void FecharModalAtivo()
     {
+        if (IsModalICloudAberto) FecharModalICloud();
         if (IsModalExcluirAberto) FecharModalExcluir();
         if (IsModalNovoAgendamentoAberto) FecharModalNovoAgendamento();
     }
@@ -46,6 +50,11 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     }
 
     partial void OnIsModalExcluirAbertoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsModalAberto));
+    }
+
+    partial void OnIsModalICloudAbertoChanged(bool value)
     {
         OnPropertyChanged(nameof(IsModalAberto));
     }
@@ -141,9 +150,23 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     [ObservableProperty]
     private string _valorTotalServicosTexto = "Total: R$ 0,00";
 
+    [ObservableProperty]
+    private string _buscaClienteTexto = string.Empty;
+
+    [ObservableProperty]
+    private bool _isClientePopupOpen;
+
+    [ObservableProperty]
+    private string _buscaServicoTexto = string.Empty;
+
+    [ObservableProperty]
+    private bool _isServicoPopupOpen;
+
     public ObservableCollection<Cliente> ClientesDisponiveis { get; } = new();
+    public ObservableCollection<Cliente> ClientesDisponiveisFiltrados { get; } = new();
     public ObservableCollection<Servico> ServicosDisponiveis { get; } = new();
-    public ObservableCollection<Servico> ServicosSelecionadosParaNovo { get; } = new();
+    public ObservableCollection<Servico> ServicosDisponiveisFiltrados { get; } = new();
+    public ObservableCollection<AgendamentoServicoItemViewModel> ServicosSelecionadosParaNovo { get; } = new();
 
     // ===================== PROPRIEDADES DO MODAL DE EXCLUSÃO =====================
     [ObservableProperty]
@@ -152,20 +175,125 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     [ObservableProperty]
     private AgendamentoListItemViewModel? _agendamentoParaExcluir;
 
+    // ===================== PROPRIEDADES DO MODAL IPHONE / ICLOUD =====================
+    [ObservableProperty]
+    private bool _isModalICloudAberto;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ICloudBotaoHeaderTexto))]
+    [NotifyPropertyChangedFor(nameof(ICloudStatusCor))]
+    [NotifyPropertyChangedFor(nameof(ICloudStatusTexto))]
+    private EstadoSincronizacao _iCloudEstado = EstadoSincronizacao.Offline;
+
+    public string ICloudStatusCor => ICloudEstado switch
+    {
+        EstadoSincronizacao.Sincronizado => "#2E7D32",         // Verde
+        EstadoSincronizacao.Offline => "#9E9E9E",              // Cinza
+        EstadoSincronizacao.Pendente => "#F57C00",             // Âmbar / Laranja
+        EstadoSincronizacao.Sincronizando => "#1976D2",        // Azul
+        EstadoSincronizacao.Conflito => "#E64A19",             // Laranja escuro / Alerta
+        EstadoSincronizacao.AutenticacaoNecessaria => "#7B1FA2",// Roxo
+        EstadoSincronizacao.ErroSincronizacao => "#D32F2F",    // Vermelho
+        _ => "#9E9E9E"
+    };
+
+    public string ICloudStatusTexto => ICloudEstado switch
+    {
+        EstadoSincronizacao.Sincronizado => "Sincronizado com iPhone",
+        EstadoSincronizacao.Offline => "Serviço Offline / Sem Conexão",
+        EstadoSincronizacao.Pendente => $"{ICloudOperacoesPendentesCount} alteração(ões) pendente(s)",
+        EstadoSincronizacao.Sincronizando => "Sincronizando com iPhone...",
+        EstadoSincronizacao.Conflito => $"{ICloudConflitosCount} conflito(s) aguardando decisão",
+        EstadoSincronizacao.AutenticacaoNecessaria => "Autenticação Necessária (Senha de App)",
+        EstadoSincronizacao.ErroSincronizacao => "Erro de sincronização",
+        _ => "Desconectado"
+    };
+
+    public string ICloudBotaoHeaderTexto => ICloudEstado switch
+    {
+        EstadoSincronizacao.Sincronizado => "iPhone: OK",
+        EstadoSincronizacao.Pendente => $"iPhone: {ICloudOperacoesPendentesCount} pend.",
+        EstadoSincronizacao.Sincronizando => "iPhone: Sincronizando...",
+        EstadoSincronizacao.Conflito => $"iPhone: {ICloudConflitosCount} conflito(s)",
+        EstadoSincronizacao.Offline => "iPhone: Offline",
+        EstadoSincronizacao.AutenticacaoNecessaria => "iPhone: Conectar",
+        EstadoSincronizacao.ErroSincronizacao => "iPhone: Erro",
+        _ => "Calendário iPhone"
+    };
+
+    [ObservableProperty]
+    private string _iCloudUltimaSincronizacaoTexto = "Nenhuma sincronização realizada";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ICloudStatusTexto))]
+    [NotifyPropertyChangedFor(nameof(ICloudBotaoHeaderTexto))]
+    private int _iCloudOperacoesPendentesCount;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ICloudStatusTexto))]
+    [NotifyPropertyChangedFor(nameof(ICloudBotaoHeaderTexto))]
+    private int _iCloudConflitosCount;
+
+    [ObservableProperty]
+    private bool _isICloudConectado;
+
+    [ObservableProperty]
+    private string _iCloudEmailInput = string.Empty;
+
+    [ObservableProperty]
+    private string _iCloudSenhaAppInput = string.Empty;
+
+    [ObservableProperty]
+    private bool _isSincronizandoICloud;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TemFeedbackICloud))]
+    private string? _iCloudFeedbackMensagem;
+
+    public bool TemFeedbackICloud => !string.IsNullOrWhiteSpace(ICloudFeedbackMensagem);
+
+    [ObservableProperty]
+    private bool _iCloudFeedbackSucesso;
+
+    [ObservableProperty]
+    private ObservableCollection<OperacaoSincronizacao> _listaOperacoesPendentes = new();
+
+    [ObservableProperty]
+    private ObservableCollection<ConflitoSincronizacao> _listaConflitos = new();
+
+    [ObservableProperty]
+    private bool _isExecutandoTestes;
+
+    [ObservableProperty]
+    private string _resultadosTestesTexto = string.Empty;
+
     public AgendamentosViewModel(
         IAgendamentoService agendamentoService,
         IClienteService clienteService,
         IServicoService servicoService,
-        IComandaService comandaService)
+        IComandaService comandaService,
+        IICloudSyncService iCloudSyncService)
     {
         _agendamentoService = agendamentoService;
         _clienteService = clienteService;
         _servicoService = servicoService;
         _comandaService = comandaService;
+        _iCloudSyncService = iCloudSyncService;
+
+        _iCloudSyncService.EstadoMudou += (s, estado) =>
+        {
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                ICloudEstado = estado;
+                _ = AtualizarStatusICloudAsync();
+                if (estado == EstadoSincronizacao.Sincronizado) { _ = CarregarAgendamentosAsync(); }
+            });
+        };
 
         MesVisualizado = new DateTime(DataSelecionada.Year, DataSelecionada.Month, 1);
         AtualizarDiasCalendario();
         _ = CarregarAgendamentosAsync();
+        _ = AtualizarStatusICloudAsync();
     }
 
     partial void OnDataSelecionadaChanged(DateTime value)
@@ -225,11 +353,14 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
             foreach (var ag in agendamentosDb)
             {
+                if (ag.Status == StatusAgendamento.Cancelado) continue;
                 var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente";
                 var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
 
-                var valorTotal = ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
+                var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0 
+                    ? ag.Comanda.ValorTotal 
+                    : ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
 
                 string statusTexto;
                 string statusBg;
@@ -267,7 +398,8 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                     StatusTexto = statusTexto,
                     StatusBg = statusBg,
                     StatusFg = statusFg,
-                    ComandaId = ag.ComandaId
+                    ComandaId = ag.ComandaId,
+                    IsSincronizadoICloud = ag.SincronizadoComICloud || !string.IsNullOrEmpty(ag.ICloudEventId)
                 });
             }
 
@@ -417,6 +549,326 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         await CarregarAgendamentosAsync();
     }
 
+    // ===================== COMANDOS DO IPHONE / ICLOUD CALENDAR =====================
+
+    [RelayCommand]
+    public async Task AtualizarStatusICloudAsync()
+    {
+        try
+        {
+            var config = await _iCloudSyncService.ObterConfiguracaoAsync();
+            ICloudEstado = _iCloudSyncService.EstadoAtual;
+            ICloudOperacoesPendentesCount = config.OperacoesPendentesCount;
+            ICloudConflitosCount = config.ConflitosCount;
+            IsICloudConectado = !string.IsNullOrWhiteSpace(config.AppleIdEmail) && config.EstaAtivo;
+
+            if (string.IsNullOrEmpty(ICloudEmailInput) && !string.IsNullOrEmpty(config.AppleIdEmail))
+            {
+                ICloudEmailInput = config.AppleIdEmail;
+            }
+
+            if (config.UltimaSincronizacaoSucesso.HasValue)
+            {
+                ICloudUltimaSincronizacaoTexto = $"Última sincronização: {config.UltimaSincronizacaoSucesso.Value:dd/MM/yyyy 'às' HH:mm}";
+            }
+            else
+            {
+                ICloudUltimaSincronizacaoTexto = "Nenhuma sincronização recente realizada";
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AgendamentosViewModel] Erro ao atualizar status iCloud: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public async Task AbrirModalICloudAsync()
+    {
+        try
+        {
+            ICloudFeedbackMensagem = null;
+            await AtualizarStatusICloudAsync();
+
+            // Carrega pendências da fila SQLite
+            var pendentes = await _iCloudSyncService.ObterOperacoesPendentesAsync();
+            ListaOperacoesPendentes.Clear();
+            foreach (var p in pendentes)
+            {
+                ListaOperacoesPendentes.Add(p);
+            }
+
+            // Carrega conflitos não resolvidos
+            var conflitos = await _iCloudSyncService.ObterConflitosNaoResolvidosAsync();
+            ListaConflitos.Clear();
+            foreach (var c in conflitos)
+            {
+                ListaConflitos.Add(c);
+            }
+
+            IsModalICloudAberto = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AgendamentosViewModel] Erro ao abrir modal iCloud: {ex}");
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Não foi possível carregar os dados de sincronização: {ex.Message}";
+            IsModalICloudAberto = true;
+        }
+    }
+
+    [RelayCommand]
+    public void FecharModalICloud()
+    {
+        IsModalICloudAberto = false;
+        ICloudFeedbackMensagem = null;
+    }
+
+    [RelayCommand]
+    public async Task SalvarCredenciaisICloudAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(ICloudEmailInput) || string.IsNullOrWhiteSpace(ICloudSenhaAppInput))
+            {
+                ICloudFeedbackSucesso = false;
+                ICloudFeedbackMensagem = "Por favor, informe o seu Apple ID e a Senha de App gerada em appleid.apple.com.";
+                return;
+            }
+
+            ICloudFeedbackSucesso = true;
+            ICloudFeedbackMensagem = "Salvando credenciais e conectando ao iCloud...";
+
+            await _iCloudSyncService.SalvarConfiguracaoAsync(ICloudEmailInput, ICloudSenhaAppInput, ativar: true, dispararSincronizacao: false);
+            await AtualizarStatusICloudAsync();
+
+            ICloudFeedbackSucesso = true;
+            ICloudFeedbackMensagem = "Conta conectada com sucesso! Uma sincronização em segundo plano foi iniciada.";
+            await SincronizarICloudAgoraAsync();
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Falha ao salvar credenciais: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    public async Task DesconectarICloudAsync()
+    {
+        try
+        {
+            await _iCloudSyncService.DesconectarAsync();
+            ICloudSenhaAppInput = string.Empty;
+            await AtualizarStatusICloudAsync();
+            ICloudFeedbackSucesso = true;
+            ICloudFeedbackMensagem = "Conta do iCloud desconectada com sucesso.";
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Erro ao desconectar: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    public async Task SincronizarICloudAgoraAsync()
+    {
+        try
+        {
+            IsSincronizandoICloud = true;
+            ICloudFeedbackMensagem = "Sincronizando com o calendário do iPhone...";
+
+            var resultado = await _iCloudSyncService.SincronizarAgoraAsync();
+            ICloudFeedbackSucesso = resultado.Sucesso;
+            ICloudFeedbackMensagem = resultado.Mensagem;
+
+            await AtualizarStatusICloudAsync();
+            await CarregarAgendamentosAsync();
+
+            // Atualiza listas do modal
+            var pendentes = await _iCloudSyncService.ObterOperacoesPendentesAsync();
+            ListaOperacoesPendentes.Clear();
+            foreach (var p in pendentes)
+            {
+                ListaOperacoesPendentes.Add(p);
+            }
+
+            var conflitos = await _iCloudSyncService.ObterConflitosNaoResolvidosAsync();
+            ListaConflitos.Clear();
+            foreach (var c in conflitos)
+            {
+                ListaConflitos.Add(c);
+            }
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Erro na sincronização: {ex.Message}";
+        }
+        finally
+        {
+            IsSincronizandoICloud = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResolverConflitoManterLocalAsync(int conflitoId)
+    {
+        try
+        {
+            await _iCloudSyncService.ResolverConflitoAsync(conflitoId, "ManterLocal");
+            ICloudFeedbackSucesso = true;
+            ICloudFeedbackMensagem = "Conflito resolvido: mantida a versão do Salão.";
+            await SincronizarICloudAgoraAsync();
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Erro ao resolver conflito: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResolverConflitoManterRemotoAsync(int conflitoId)
+    {
+        try
+        {
+            await _iCloudSyncService.ResolverConflitoAsync(conflitoId, "ManterRemoto");
+            ICloudFeedbackSucesso = true;
+            ICloudFeedbackMensagem = "Conflito resolvido: mantida a versão do iPhone.";
+            await SincronizarICloudAgoraAsync();
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Erro ao resolver conflito: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    public async Task ExecutarTestesAutomatizadosAsync()
+    {
+        try
+        {
+            IsExecutandoTestes = true;
+            ResultadosTestesTexto = "Iniciando execução da bateria de 11 testes de aceitação com provedor simulado...\n";
+
+            var sb = new System.Text.StringBuilder();
+            var resultados = await GerenciadorSalao.Services.Tests.ICloudSyncAcceptanceTests.ExecutarTodosOsTestesAsync(msg =>
+            {
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    sb.AppendLine(msg);
+                    ResultadosTestesTexto = sb.ToString();
+                });
+            });
+
+            int passaram = resultados.Count(r => r.Passou);
+            sb.AppendLine($"\nFinalizado: {passaram}/{resultados.Count} testes passaram com sucesso!");
+            ResultadosTestesTexto = sb.ToString();
+            ICloudFeedbackSucesso = passaram == resultados.Count;
+            ICloudFeedbackMensagem = $"{passaram}/{resultados.Count} testes de aceitação executados com sucesso!";
+        }
+        catch (Exception ex)
+        {
+            ICloudFeedbackSucesso = false;
+            ICloudFeedbackMensagem = $"Erro ao executar testes: {ex.Message}";
+        }
+        finally
+        {
+            IsExecutandoTestes = false;
+        }
+    }
+
+    partial void OnBuscaClienteTextoChanged(string value)
+    {
+        if (ClienteSelecionado != null && value != ClienteSelecionado.NomeExibicao)
+        {
+            ClienteSelecionado = null;
+        }
+        FiltrarClientesDisponiveis();
+        if (!string.IsNullOrEmpty(value) && (ClienteSelecionado == null || value != ClienteSelecionado.NomeExibicao))
+        {
+            IsClientePopupOpen = true;
+        }
+    }
+
+    partial void OnBuscaServicoTextoChanged(string value)
+    {
+        FiltrarServicosDisponiveis();
+        if (!string.IsNullOrEmpty(value))
+        {
+            IsServicoPopupOpen = true;
+        }
+    }
+
+    [RelayCommand]
+    public void SelecionarClienteOption(Cliente? cliente)
+    {
+        if (cliente == null) return;
+        ClienteSelecionado = cliente;
+        BuscaClienteTexto = cliente.NomeExibicao;
+        IsClientePopupOpen = false;
+        MensagemErroModal = null;
+    }
+
+    private void FiltrarClientesDisponiveis()
+    {
+        var termo = BuscaClienteTexto?.Trim() ?? string.Empty;
+        ClientesDisponiveisFiltrados.Clear();
+        var lista = string.IsNullOrWhiteSpace(termo) || (ClienteSelecionado != null && termo == ClienteSelecionado.NomeExibicao)
+            ? (IEnumerable<Cliente>)ClientesDisponiveis
+            : ClientesDisponiveis.Where(c =>
+                (c.Nome != null && c.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                (c.Apelido != null && c.Apelido.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                (c.Telefone != null && c.Telefone.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+
+        foreach (var cli in lista.Take(100))
+        {
+            ClientesDisponiveisFiltrados.Add(cli);
+        }
+    }
+
+    [RelayCommand]
+    public void SelecionarServicoOption(Servico? servico)
+    {
+        if (servico == null) return;
+
+        var item = new AgendamentoServicoItemViewModel
+        {
+            ServicoId = servico.Id,
+            NomeExibicao = servico.NomeExibicao,
+            DuracaoMinutos = servico.DuracaoMinutos,
+            DuracaoTexto = ValidationHelper.FormatarMinutosParaHhMm(servico.DuracaoMinutos),
+            Valor = servico.Valor,
+            ValorTexto = servico.Valor.ToString("N2", new CultureInfo("pt-BR")),
+            OnChanged = AtualizarTotaisNovoAgendamento
+        };
+
+        ServicosSelecionadosParaNovo.Add(item);
+        BuscaServicoTexto = string.Empty;
+        IsServicoPopupOpen = false;
+        AtualizarTotaisNovoAgendamento();
+        MensagemErroModal = null;
+    }
+
+    private void FiltrarServicosDisponiveis()
+    {
+        var termo = BuscaServicoTexto?.Trim() ?? string.Empty;
+        ServicosDisponiveisFiltrados.Clear();
+        var lista = string.IsNullOrWhiteSpace(termo)
+            ? (IEnumerable<Servico>)ServicosDisponiveis
+            : ServicosDisponiveis.Where(s =>
+                (s.Descricao != null && s.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
+                (s.Especificacao != null && s.Especificacao.Contains(termo, StringComparison.OrdinalIgnoreCase)));
+
+        foreach (var s in lista.Take(100))
+        {
+            ServicosDisponiveisFiltrados.Add(s);
+        }
+    }
+
     // ===================== MODAL NOVO / EDITAR AGENDAMENTO =====================
     [RelayCommand]
     public async Task AbrirModalNovoAgendamentoAsync()
@@ -431,14 +883,22 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
             await CarregarListasFormularioAsync();
 
-            ClienteSelecionado = ClientesDisponiveis.FirstOrDefault();
-            ServicoSelecionadoParaAdicionar = ServicosDisponiveis.FirstOrDefault();
+            ClienteSelecionado = null;
+            BuscaClienteTexto = string.Empty;
+            IsClientePopupOpen = false;
+
+            BuscaServicoTexto = string.Empty;
+            IsServicoPopupOpen = false;
+
             ServicosSelecionadosParaNovo.Clear();
             NovaObservacao = string.Empty;
 
             NovaData = DataSelecionada.Date;
             NovaHoraTexto = "09:00";
             NovaDataHoraTexto = $"{DataSelecionada:dd/MM/yyyy} 09:00";
+
+            FiltrarClientesDisponiveis();
+            FiltrarServicosDisponiveis();
 
             AtualizarTotaisNovoAgendamento();
             IsModalNovoAgendamentoAberto = true;
@@ -467,7 +927,12 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
             await CarregarListasFormularioAsync();
 
             ClienteSelecionado = ClientesDisponiveis.FirstOrDefault(c => c.Id == agendamentoDb.ClienteId);
-            ServicoSelecionadoParaAdicionar = ServicosDisponiveis.FirstOrDefault();
+            BuscaClienteTexto = ClienteSelecionado?.NomeExibicao ?? string.Empty;
+            IsClientePopupOpen = false;
+
+            BuscaServicoTexto = string.Empty;
+            IsServicoPopupOpen = false;
+
             NovaObservacao = agendamentoDb.Observacao ?? string.Empty;
 
             NovaData = agendamentoDb.DataHora.Date;
@@ -480,9 +945,25 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                 var s = ServicosDisponiveis.FirstOrDefault(x => x.Id == asv.ServicoId) ?? asv.Servico;
                 if (s != null)
                 {
-                    ServicosSelecionadosParaNovo.Add(s);
+                    var comandaItem = agendamentoDb.Comanda?.Itens.FirstOrDefault(i => i.ServicoId == s.Id);
+                    var valor = comandaItem?.ValorUnitario ?? s.Valor;
+                    var duracao = s.DuracaoMinutos;
+
+                    ServicosSelecionadosParaNovo.Add(new AgendamentoServicoItemViewModel
+                    {
+                        ServicoId = s.Id,
+                        NomeExibicao = s.NomeExibicao,
+                        DuracaoMinutos = duracao,
+                        DuracaoTexto = ValidationHelper.FormatarMinutosParaHhMm(duracao),
+                        Valor = valor,
+                        ValorTexto = valor.ToString("N2", new CultureInfo("pt-BR")),
+                        OnChanged = AtualizarTotaisNovoAgendamento
+                    });
                 }
             }
+
+            FiltrarClientesDisponiveis();
+            FiltrarServicosDisponiveis();
 
             AtualizarTotaisNovoAgendamento();
             IsModalNovoAgendamentoAberto = true;
@@ -505,32 +986,26 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         ServicosDisponiveis.Clear();
         foreach (var s in servicos.OrderBy(s => s.NomeExibicao))
             ServicosDisponiveis.Add(s);
+
+        FiltrarClientesDisponiveis();
+        FiltrarServicosDisponiveis();
     }
 
     [RelayCommand]
     public void FecharModalNovoAgendamento()
     {
         IsModalNovoAgendamentoAberto = false;
+        IsClientePopupOpen = false;
+        IsServicoPopupOpen = false;
         AgendamentoEmEdicaoId = null;
         MensagemErroModal = null;
     }
 
     [RelayCommand]
-    public void AdicionarServico()
+    public void RemoverServico(AgendamentoServicoItemViewModel? item)
     {
-        if (ServicoSelecionadoParaAdicionar == null)
-            return;
-
-        ServicosSelecionadosParaNovo.Add(ServicoSelecionadoParaAdicionar);
-        AtualizarTotaisNovoAgendamento();
-        MensagemErroModal = null;
-    }
-
-    [RelayCommand]
-    public void RemoverServico(Servico servico)
-    {
-        if (servico == null) return;
-        ServicosSelecionadosParaNovo.Remove(servico);
+        if (item == null) return;
+        ServicosSelecionadosParaNovo.Remove(item);
         AtualizarTotaisNovoAgendamento();
     }
 
@@ -561,16 +1036,10 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         }
 
         DateTime dataHoraAgendamento;
-        var horaLimpa = NovaHoraTexto?.Trim() ?? "";
-
-        // Validação estrita de horário HH:mm
-        var partesHora = horaLimpa.Split(':');
-        if (partesHora.Length == 2 &&
-            int.TryParse(partesHora[0], out var hora) &&
-            int.TryParse(partesHora[1], out var minuto) &&
-            hora >= 0 && hora <= 23 && minuto >= 0 && minuto <= 59)
+        if (ValidationHelper.ValidarHorario(NovaHoraTexto, out var tsHorario, out var erroHorario))
         {
-            dataHoraAgendamento = NovaData.Date.AddHours(hora).AddMinutes(minuto);
+            dataHoraAgendamento = NovaData.Date.Add(tsHorario);
+            NovaHoraTexto = ValidationHelper.NormalizarHorario(NovaHoraTexto);
         }
         else if (DateTime.TryParseExact(
                     NovaDataHoraTexto?.Trim(),
@@ -583,13 +1052,19 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         }
         else
         {
-            MensagemErroModal = "Informe um horário válido no formato HH:mm (ex: 09:30).";
+            MensagemErroModal = erroHorario ?? "Informe um horário válido no formato HH:mm (ex: 09:30).";
             return;
         }
 
         try
         {
-            var servicoIds = ServicosSelecionadosParaNovo.Select(s => s.Id).ToList();
+            var servicoIds = ServicosSelecionadosParaNovo.Select(s => s.ServicoId).ToList();
+            var servicosCustomizados = ServicosSelecionadosParaNovo.Select(s => new ItemServicoAgendamentoDto
+            {
+                ServicoId = s.ServicoId,
+                Valor = s.Valor,
+                DuracaoMinutos = s.DuracaoMinutos
+            }).ToList();
 
             if (AgendamentoEmEdicaoId.HasValue)
             {
@@ -598,7 +1073,8 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                     ClienteSelecionado.Id,
                     dataHoraAgendamento,
                     servicoIds,
-                    NovaObservacao);
+                    NovaObservacao,
+                    servicosCustomizados);
             }
             else
             {
@@ -606,10 +1082,13 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                     ClienteSelecionado.Id,
                     dataHoraAgendamento,
                     servicoIds,
-                    NovaObservacao);
+                    NovaObservacao,
+                    servicosCustomizados);
             }
 
             IsModalNovoAgendamentoAberto = false;
+            IsClientePopupOpen = false;
+            IsServicoPopupOpen = false;
             AgendamentoEmEdicaoId = null;
             DataSelecionada = dataHoraAgendamento.Date;
             await CarregarAgendamentosAsync();
@@ -618,5 +1097,53 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         {
             MensagemErroModal = $"Não foi possível salvar o agendamento: {ex.Message}";
         }
+    }
+}
+
+public partial class AgendamentoServicoItemViewModel : ObservableObject
+{
+    private static readonly CultureInfo PtBrCulture = new("pt-BR");
+
+    public int ServicoId { get; set; }
+    public string NomeExibicao { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    private int _duracaoMinutos;
+
+    [ObservableProperty]
+    private string _duracaoTexto = string.Empty;
+
+    [ObservableProperty]
+    private decimal _valor;
+
+    [ObservableProperty]
+    private string _valorTexto = "0,00";
+
+    public Action? OnChanged { get; set; }
+
+    partial void OnValorTextoChanged(string value)
+    {
+        if (ValidationHelper.ValidarValorMonetario(value, out var parsed, out _))
+        {
+            _valor = parsed;
+        }
+        else
+        {
+            _valor = 0;
+        }
+        OnChanged?.Invoke();
+    }
+
+    partial void OnDuracaoTextoChanged(string value)
+    {
+        if (ValidationHelper.ValidarDuracaoServico(value, out var mins, out _))
+        {
+            _duracaoMinutos = mins;
+        }
+        else if (int.TryParse(ValidationHelper.LimparApenasDigitos(value), out var minsNum) && minsNum > 0)
+        {
+            _duracaoMinutos = minsNum;
+        }
+        OnChanged?.Invoke();
     }
 }

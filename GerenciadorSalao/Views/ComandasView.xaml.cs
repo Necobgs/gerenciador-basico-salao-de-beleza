@@ -18,6 +18,7 @@ public partial class ComandasView : UserControl
     {
         if (DataContext is ComandasViewModel vm)
         {
+            vm.IsClientePopupOpen = false;
             vm.IsItemPopupOpen = false;
             vm.IsCalendarPopupOpen = false;
         }
@@ -27,6 +28,21 @@ public partial class ComandasView : UserControl
     {
         if (DataContext is ComandasViewModel vm)
         {
+            if (vm.IsClientePopupOpen)
+            {
+                if (e.OriginalSource is DependencyObject dep)
+                {
+                    if (IsElementOrDescendant(dep, BorderInputCliente) || IsElementOrDescendant(dep, PopupClientes?.Child))
+                    {
+                        // Permite interação normal dentro do campo e popup de clientes
+                    }
+                    else
+                    {
+                        vm.IsClientePopupOpen = false;
+                    }
+                }
+            }
+
             if (vm.IsItemPopupOpen)
             {
                 if (e.OriginalSource is DependencyObject dep)
@@ -81,6 +97,7 @@ public partial class ComandasView : UserControl
     {
         if (DataContext is ComandasViewModel vm)
         {
+            vm.IsClientePopupOpen = false;
             vm.IsItemPopupOpen = false;
             vm.FecharModalEdicaoCommand.Execute(null);
             e.Handled = true;
@@ -180,6 +197,56 @@ public partial class ComandasView : UserControl
                 vm.ItemDisponivelSelecionado = vm.ItensDisponiveis[idx - 1];
             }
             e.Handled = true;
+        }
+    }
+
+    // ===================== CAMPO DE CLIENTE PESQUISÁVEL =====================
+    private void BorderInputCliente_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject dep && BtnToggleClientePopup != null)
+        {
+            if (dep is Visual visual && (BtnToggleClientePopup == dep || BtnToggleClientePopup.IsAncestorOf(visual)))
+            {
+                return;
+            }
+        }
+
+        if (DataContext is ComandasViewModel vm && vm.PodeEditar)
+        {
+            if (!TxtBuscaCliente.IsKeyboardFocused)
+            {
+                TxtBuscaCliente.Focus();
+            }
+
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                vm.IsClientePopupOpen = true;
+            }), System.Windows.Threading.DispatcherPriority.Input);
+        }
+    }
+
+    private void TxtBuscaCliente_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ComandasViewModel vm && vm.PodeEditar)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                vm.IsClientePopupOpen = true;
+            }), System.Windows.Threading.DispatcherPriority.Input);
+        }
+    }
+
+    private void TxtBuscaCliente_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not ComandasViewModel vm || !vm.PodeEditar) return;
+
+        if (e.Key == Key.Escape)
+        {
+            vm.IsClientePopupOpen = false;
+        }
+        else if (e.Key == Key.Down)
+        {
+            vm.IsClientePopupOpen = true;
         }
     }
 }

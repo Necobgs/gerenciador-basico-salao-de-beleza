@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<AgendamentoServico> AgendamentoServicos => Set<AgendamentoServico>();
     public DbSet<Comanda> Comandas => Set<Comanda>();
     public DbSet<ComandaItem> ComandaItens => Set<ComandaItem>();
+    public DbSet<OperacaoSincronizacao> OperacoesSincronizacao => Set<OperacaoSincronizacao>();
+    public DbSet<ConflitoSincronizacao> ConflitosSincronizacao => Set<ConflitoSincronizacao>();
 
     public AppDbContext()
     {
@@ -89,11 +91,40 @@ public class AppDbContext : DbContext
             entity.HasKey(a => a.Id);
             entity.Property(a => a.Observacao).HasMaxLength(1000);
             entity.Property(a => a.GoogleEventId).HasMaxLength(255);
+            entity.Property(a => a.ICloudEventId).HasMaxLength(255);
+            entity.Property(a => a.ICloudETag).HasMaxLength(255);
+            entity.Property(a => a.ICloudUrl).HasMaxLength(500);
 
             entity.HasOne(a => a.Cliente)
                   .WithMany(c => c.Agendamentos)
                   .HasForeignKey(a => a.ClienteId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // OperacaoSincronizacao
+        modelBuilder.Entity<OperacaoSincronizacao>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+            entity.Property(o => o.ICloudEventId).HasMaxLength(255);
+            entity.Property(o => o.UltimoErro).HasMaxLength(1000);
+            entity.Property(o => o.PayloadJson).HasColumnType("TEXT");
+
+            entity.HasIndex(o => o.Estado);
+            entity.HasIndex(o => o.AgendamentoId);
+        });
+
+        // ConflitoSincronizacao
+        modelBuilder.Entity<ConflitoSincronizacao>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.ICloudEventId).HasMaxLength(255);
+            entity.Property(c => c.Titulo).IsRequired().HasMaxLength(200);
+            entity.Property(c => c.Descricao).HasMaxLength(1000);
+            entity.Property(c => c.ResolucaoEscolhida).HasMaxLength(50);
+            entity.Property(c => c.DadosLocaisJson).HasColumnType("TEXT");
+            entity.Property(c => c.DadosRemotosJson).HasColumnType("TEXT");
+
+            entity.HasIndex(c => c.Resolvido);
         });
 
         // AgendamentoServico (N:N)

@@ -6,7 +6,9 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:helpers="clr-namespace:GerenciadorSalao.Helpers"
              mc:Ignorable="d" 
-             d:DesignHeight="850" d:DesignWidth="1100">
+             d:DesignHeight="850" d:DesignWidth="1100"
+             PreviewMouseDown="AgendamentosView_PreviewMouseDown"
+             Unloaded="AgendamentosView_Unloaded">
 
     <UserControl.Resources>
 
@@ -373,6 +375,40 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Estilo dos Campos de Formulário Modernos -->
+        <Style x:Key="ModalTextBoxStyle" TargetType="TextBox">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
+            <Setter Property="Background" Value="#F8F6F5"/>
+            <Setter Property="BorderBrush" Value="#E8E2E0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
+                                <Setter TargetName="border" Property="Background" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <!-- Grid Principal com Camada de Conteúdo e Camada Modal -->
@@ -406,16 +442,31 @@
                                    Margin="0,4,0,0"/>
                     </StackPanel>
 
-                    <!-- Botão Novo Agendamento -->
-                    <Button Grid.Column="1"
-                            Command="{Binding AbrirModalNovoAgendamentoCommand}"
-                            Style="{StaticResource PrimaryActionButtonStyle}"
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
-                            <TextBlock Text="Novo agendamento" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- Botões do Header (Calendário iPhone + Novo Agendamento) -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Botão Calendário iPhone / iCloud -->
+                        <Button Command="{Binding AbrirModalICloudCommand}"
+                                Style="{StaticResource OutlineActionButtonStyle}"
+                                Padding="12,8"
+                                Margin="0,0,10,0"
+                                ToolTip="Sincronização Offline-First com Calendário do iPhone (iCloud)">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{Binding ICloudStatusCor}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <ui:SymbolIcon Symbol="Phone24" FontSize="15" Margin="0,0,6,0" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ICloudBotaoHeaderTexto}" FontSize="12" FontWeight="Medium" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Botão Novo Agendamento -->
+                        <Button Command="{Binding AbrirModalNovoAgendamentoCommand}"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:SymbolIcon Symbol="Add24" FontSize="15" Foreground="White" Margin="0,0,6,0"/>
+                                <TextBlock Text="Novo agendamento" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
                 <!-- ===================== 2. BARRA DE FILTROS ===================== -->
@@ -710,10 +761,25 @@
 
                                         <!-- Coluna 2: Cliente e Serviços -->
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,16,0">
-                                            <TextBlock Text="{Binding NomeCliente}"
-                                                       FontSize="15"
-                                                       FontWeight="Bold"
-                                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding NomeCliente}"
+                                                           FontSize="15"
+                                                           FontWeight="Bold"
+                                                           Foreground="{StaticResource BrushTextPrimary}"/>
+                                                <!-- Badge iPhone se sincronizado -->
+                                                <Border Visibility="{Binding IsSincronizadoICloud, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                        Background="#F3E5F5"
+                                                        CornerRadius="6"
+                                                        Padding="6,2"
+                                                        Margin="8,0,0,0"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip="Sincronizado com o Calendário do iPhone (iCloud)">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <ui:SymbolIcon Symbol="Phone24" FontSize="11" Foreground="#7B1FA2" Margin="0,0,3,0"/>
+                                                        <TextBlock Text="iPhone" FontSize="10" FontWeight="SemiBold" Foreground="#7B1FA2"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
                                             <TextBlock Text="{Binding ServicosTexto}"
                                                        FontSize="13"
                                                        Foreground="{StaticResource BrushTextSecondary}"
@@ -784,13 +850,13 @@
             <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalNovoAgendamento_MouseLeftButtonDown"/>
 
             <!-- Cartão Centrado do Modal -->
-            <Border Width="460"
-                    MaxHeight="720"
-                    HorizontalAlignment="Center"
+            <Border Width="580"
+                    Height="715"
+                    HorizontalAlignment="Center" 
                     VerticalAlignment="Center"
                     Background="{StaticResource BrushSurface}"
                     CornerRadius="16"
-                    Padding="24"
+                    Padding="26,20"
                     BorderBrush="{StaticResource BrushBorder}"
                     BorderThickness="1"
                     SnapsToDevicePixels="True">
@@ -802,274 +868,732 @@
                     <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="8" Opacity="0.22" Color="#302B2A"/>
                 </Border.Effect>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
-                        <!-- Topo do Modal: Título e Botão Fechar (✕) -->
-                        <Grid Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Topo -->
+                        <RowDefinition Height="*"/>    <!-- Campos e Serviços -->
+                        <RowDefinition Height="Auto"/> <!-- Banner de Erro -->
+                        <RowDefinition Height="Auto"/> <!-- Botão de Ação -->
+                    </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Column="0"
-                                       Text="{Binding ModalTitulo}" 
+                    <!-- Topo do Modal: Título e Botão Fechar (✕) -->
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ModalTitulo}" 
                                        FontSize="18" 
                                        FontWeight="Bold" 
-                                       Foreground="{StaticResource BrushTextPrimary}"
-                                       VerticalAlignment="Center"/>
+                                       Foreground="{StaticResource BrushTextPrimary}"/>
+                            <TextBlock Text="{Binding ModalSubtitulo}" 
+                                       FontSize="12" 
+                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
 
-                            <Button Grid.Column="1"
-                                    Command="{Binding FecharModalNovoAgendamentoCommand}"
-                                    Style="{StaticResource ModalCloseButtonStyle}">
-                                <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </Button>
-                        </Grid>
+                        <Button HorizontalAlignment="Right" 
+                                VerticalAlignment="Top" 
+                                Command="{Binding FecharModalNovoAgendamentoCommand}" 
+                                Background="Transparent" 
+                                BorderThickness="0" 
+                                Cursor="Hand" 
+                                Padding="6">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </Button>
+                    </Grid>
 
-                        <!-- Subtítulo -->
-                        <TextBlock Text="{Binding ModalSubtitulo}" 
-                                   FontSize="13" 
-                                   Foreground="{StaticResource BrushTextSecondary}" 
-                                   Margin="0,0,0,16"/>
+                    <!-- Área de Conteúdo com Layout Fixo e Estável (SEM SCROLL EXTERNO) -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                        <StackPanel>
+                            <!-- 1. Campo Cliente Pesquisável (Aumentado: Nome, Apelido e Telefone) -->
+                            <TextBlock Text="Cliente" 
+                                       FontSize="12" 
+                                       FontWeight="SemiBold" 
+                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                       Margin="0,0,0,5"/>
 
-                        <!-- Banner de Erro em Tempo Real (Validação Defensiva) -->
-                        <Border Background="#FEECE9" 
-                                BorderBrush="#F8C8BF" 
-                                BorderThickness="1" 
-                                CornerRadius="8" 
-                                Padding="12,10" 
-                                Margin="0,0,0,14"
-                                Visibility="{Binding TemMensagemErroModal, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="Warning24" FontSize="16" Foreground="#D32F2F" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Grid.Column="1" Text="{Binding MensagemErroModal}" FontSize="12" Foreground="#D32F2F" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                            </Grid>
-                        </Border>
-
-                        <!-- 1. Campo Cliente -->
-                        <TextBlock Text="Cliente" 
-                                   FontSize="12" 
-                                   FontWeight="Medium" 
-                                   Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,0,0,6"/>
-                        <ComboBox Tag="Selecione um cliente"
-                                  ItemsSource="{Binding ClientesDisponiveis}"
-                                  SelectedItem="{Binding ClienteSelecionado}"
-                                  Style="{StaticResource FormComboBoxStyle}"
-                                  Margin="0,0,0,14">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="2,1">
+                            <Grid x:Name="ContainerInputCliente" Margin="0,0,0,10">
+                                <!-- O INPUT ÚNICO: Campo clicável e digitável aumentado (Height="52") -->
+                                <Border x:Name="BorderInputCliente"
+                                        Background="White"
+                                        BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Height="52"
+                                        Padding="12,4"
+                                        Cursor="IBeam"
+                                        PreviewMouseLeftButtonDown="BorderInputCliente_PreviewMouseLeftButtonDown">
+                                    <Grid>
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding NomeExibicao}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource BrushTextPrimary}"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Telefone}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="8,0,0,0"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
 
-                        <!-- 2. Data e Horário -->
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="120"/>
-                            </Grid.ColumnDefinitions>
+                                        <!-- Ícone do Cliente -->
+                                        <Border Grid.Column="0"
+                                                Width="32"
+                                                Height="32"
+                                                CornerRadius="16"
+                                                Background="#F4ECE8"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,10,0">
+                                            <ui:SymbolIcon Symbol="Person24" FontSize="15" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
 
-                            <!-- Data -->
-                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                <TextBlock Text="Data" 
-                                           FontSize="12" 
-                                           FontWeight="Medium" 
-                                           Foreground="{StaticResource BrushTextPrimary}" 
-                                           Margin="0,0,0,6"/>
-                                <DatePicker SelectedDate="{Binding NovaData, Mode=TwoWay}"
-                                            Height="38"
-                                            FontSize="12"
-                                            BorderBrush="{StaticResource BrushBorder}"/>
-                            </StackPanel>
+                                        <!-- Conteúdo Central: Nome em cima e Telefone embaixo se selecionado, ou digitação de busca -->
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBox x:Name="TxtBuscaCliente"
+                                                         Text="{Binding BuscaClienteTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontSize="13"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="{StaticResource BrushTextPrimary}"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Padding="0"
+                                                         Margin="0"
+                                                         VerticalContentAlignment="Center"
+                                                         GotFocus="TxtBuscaCliente_GotFocus"
+                                                         PreviewKeyDown="TxtBuscaCliente_PreviewKeyDown"/>
 
-                            <!-- Horário com Máscara HH:mm -->
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="Horário" 
-                                           FontSize="12" 
-                                           FontWeight="Medium" 
-                                           Foreground="{StaticResource BrushTextPrimary}" 
-                                           Margin="0,0,0,6"/>
-                                <Border BorderBrush="{StaticResource BrushBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Height="38"
-                                        Padding="10,0"
-                                        Background="{StaticResource BrushSurface}">
-                                    <Grid>
-                                        <TextBox Text="{Binding NovaHoraTexto, UpdateSourceTrigger=PropertyChanged}"
-                                                 helpers:MaskHelper.Mask="Time"
-                                                 MaxLength="5"
-                                                 BorderThickness="0"
-                                                 Background="Transparent"
-                                                 FontSize="12"
-                                                 FontWeight="Medium"
-                                                 Foreground="{StaticResource BrushTextPrimary}"
-                                                 VerticalAlignment="Center"
-                                                 Margin="0,0,20,0"/>
-                                        <ui:SymbolIcon Symbol="Clock24" 
-                                                       FontSize="14" 
-                                                       Foreground="{StaticResource BrushTextSecondary}" 
-                                                       HorizontalAlignment="Right" 
-                                                       VerticalAlignment="Center"/>
+                                                <!-- Linha inferior quando cliente está selecionado: Telefone em tamanho menor -->
+                                                <TextBlock Text="{Binding ClienteSelecionado.Telefone, StringFormat='Tel: {0}'}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource BrushTextSecondary}"
+                                                           Margin="0,2,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding ClienteSelecionado}" Value="{x:Null}"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding ClienteSelecionado.Telefone}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding ClienteSelecionado.Telefone}" Value="">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <!-- Placeholder quando o campo de busca está vazio -->
+                                            <TextBlock Text="Clique para selecionar ou digite para pesquisar..."
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource BrushTextSecondary}"
+                                                       VerticalAlignment="Center"
+                                                       Padding="0"
+                                                       Margin="0"
+                                                       IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding BuscaClienteTexto}" Value=""/>
+                                                                    <Condition Binding="{Binding IsKeyboardFocused, ElementName=TxtBuscaCliente}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+
+                                        <!-- Botão de Seta para Abrir/Fechar a Lista -->
+                                        <ToggleButton x:Name="BtnToggleClientePopup"
+                                                      Grid.Column="2"
+                                                      IsChecked="{Binding IsClientePopupOpen, Mode=TwoWay}"
+                                                      Background="Transparent"
+                                                      BorderThickness="0"
+                                                      Padding="6,0"
+                                                      Cursor="Hand"
+                                                      Focusable="False">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border Background="Transparent">
+                                                        <ui:SymbolIcon Symbol="ChevronDown24" FontSize="12" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                        </ToggleButton>
                                     </Grid>
                                 </Border>
-                            </StackPanel>
-                        </Grid>
 
-                        <!-- 3. Campo Adicionar Serviço -->
-                        <TextBlock Text="Adicionar serviço" 
-                                   FontSize="12" 
-                                   FontWeight="Medium" 
-                                   Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,0,0,6"/>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                                <!-- POPUP DO DROPDOWN DE CLIENTES -->
+                                <Popup x:Name="PopupClientes"
+                                       PlacementTarget="{Binding ElementName=BorderInputCliente}"
+                                       Placement="Bottom"
+                                       IsOpen="{Binding IsClientePopupOpen, Mode=TwoWay}"
+                                       StaysOpen="False"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Fade"
+                                       VerticalOffset="4"
+                                       Width="{Binding ActualWidth, ElementName=BorderInputCliente}">
+                                    <Border Background="White"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Margin="0,4,0,10"
+                                            MaxHeight="260"
+                                            SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.16" Color="#201C1B"/>
+                                        </Border.Effect>
 
-                            <ComboBox Grid.Column="0"
-                                      Tag="Selecione um serviço"
-                                      ItemsSource="{Binding ServicosDisponiveis}"
-                                      SelectedItem="{Binding ServicoSelecionadoParaAdicionar}"
-                                      Style="{StaticResource FormComboBoxStyle}">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="2,1">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding NomeExibicao}" FontWeight="SemiBold" FontSize="12" Foreground="{StaticResource BrushTextPrimary}"/>
-                                                <TextBlock Text=" · " Foreground="{StaticResource BrushTextSecondary}" FontSize="12"/>
-                                                <TextBlock Text="{Binding DuracaoMinutos, StringFormat='{}{0} min'}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <StackPanel>
+                                                <ItemsControl ItemsSource="{Binding ClientesDisponiveisFiltrados}" HorizontalContentAlignment="Stretch">
+                                                    <ItemsControl.ItemContainerStyle>
+                                                        <Style TargetType="FrameworkElement">
+                                                            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                                        </Style>
+                                                    </ItemsControl.ItemContainerStyle>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding DataContext.SelecionarClienteOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Background="Transparent"
+                                                                    BorderThickness="0"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    HorizontalContentAlignment="Stretch"
+                                                                    Height="54"
+                                                                    Padding="12,0"
+                                                                    Cursor="Hand">
+                                                                <Button.Template>
+                                                                    <ControlTemplate TargetType="Button">
+                                                                        <Border x:Name="CliBorder" 
+                                                                                Background="#00FAF4F2" 
+                                                                                Padding="{TemplateBinding Padding}" 
+                                                                                HorizontalAlignment="Stretch"
+                                                                                VerticalAlignment="Stretch">
+                                                                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                                                        </Border>
+                                                                        <ControlTemplate.Triggers>
+                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                <Setter TargetName="CliBorder" Property="Background" Value="#FAF4F2"/>
+                                                                            </Trigger>
+                                                                        </ControlTemplate.Triggers>
+                                                                    </ControlTemplate>
+                                                                </Button.Template>
+                                                                <Grid HorizontalAlignment="Stretch">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <Border Grid.Column="0" 
+                                                                            Width="32" 
+                                                                            Height="32" 
+                                                                            CornerRadius="16" 
+                                                                            Background="#F4ECE8" 
+                                                                            Margin="0,0,10,0" 
+                                                                            VerticalAlignment="Center">
+                                                                        <ui:SymbolIcon Symbol="Person24" FontSize="15" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Border>
+
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding NomeExibicao}" 
+                                                                                   FontSize="13" 
+                                                                                   FontWeight="SemiBold" 
+                                                                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                        <TextBlock Text="{Binding Telefone}" 
+                                                                                   FontSize="11" 
+                                                                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                                                                   Margin="0,2,0,0" 
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <!-- Mensagem quando não houver resultado na busca -->
+                                                <TextBlock Text="Nenhum cliente encontrado."
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource BrushTextSecondary}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,14">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ClientesDisponiveisFiltrados.Count}" Value="0">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding Valor, StringFormat='{}{0:C2}'}" FontWeight="Bold" FontSize="12" Foreground="{StaticResource BrushPrimary}" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <Button Grid.Column="1"
-                                    Command="{Binding AdicionarServicoCommand}"
-                                    Style="{StaticResource FormAddButtonStyle}"
-                                    Margin="8,0,0,0">
-                                <ui:SymbolIcon Symbol="Add24" FontSize="16" Foreground="White"/>
-                            </Button>
-                        </Grid>
-
-                        <!-- Lista de Serviços Adicionados no Agendamento -->
-                        <ItemsControl ItemsSource="{Binding ServicosSelecionadosParaNovo}" Margin="0,0,0,12">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="#F0ECE9" BorderThickness="0,0,0,1" Padding="0,8">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- Nome e Duração do Serviço -->
-                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding NomeExibicao}" 
-                                                           FontSize="13" 
-                                                           FontWeight="Bold" 
-                                                           Foreground="{StaticResource BrushTextPrimary}"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="{Binding DuracaoMinutos}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                                                    <TextBlock Text=" min" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <!-- Preço e Botão Remover -->
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Valor, StringFormat='{}{0:C2}'}" 
-                                                           FontSize="13" 
-                                                           FontWeight="Bold" 
-                                                           Foreground="{StaticResource BrushTextPrimary}" 
-                                                           VerticalAlignment="Center" 
-                                                           Margin="0,0,12,0"/>
-                                                <Button Command="{Binding DataContext.RemoverServicoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButtonTrashStyle}">
-                                                    <ui:SymbolIcon Symbol="Delete24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
+                                        </ScrollViewer>
                                     </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                </Popup>
+                            </Grid>
 
-                        <!-- Faixa de Totais (Tempo e Valor Total) -->
-                        <Border Background="#FDF8F5" 
-                                CornerRadius="8" 
-                                Padding="14,12" 
-                                Margin="0,0,0,16">
-                            <Grid>
+                            <!-- 2. Data e Horário -->
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="130"/>
                                 </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <ui:SymbolIcon Symbol="Clock24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding TempoTotalMinutosTexto}" 
+                                <!-- Data -->
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                    <TextBlock Text="Data" 
                                                FontSize="12" 
-                                               Foreground="{StaticResource BrushTextSecondary}" 
-                                               VerticalAlignment="Center"/>
+                                               FontWeight="SemiBold" 
+                                               Foreground="{StaticResource BrushTextPrimary}" 
+                                               Margin="0,0,0,5"/>
+                                    <DatePicker SelectedDate="{Binding NovaData, Mode=TwoWay}"
+                                                Height="38"
+                                                FontSize="12"
+                                                BorderBrush="{StaticResource BrushBorder}"/>
                                 </StackPanel>
 
-                                <TextBlock Grid.Column="1" 
-                                           Text="{Binding ValorTotalServicosTexto}" 
-                                           FontSize="13" 
-                                           FontWeight="Bold" 
-                                           Foreground="{StaticResource BrushTextPrimary}" 
-                                           VerticalAlignment="Center"/>
+                                <!-- Horário com Máscara HH:mm -->
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Horário" 
+                                               FontSize="12" 
+                                               FontWeight="SemiBold" 
+                                               Foreground="{StaticResource BrushTextPrimary}" 
+                                               Margin="0,0,0,5"/>
+                                    <Border BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Height="38"
+                                            Padding="10,0"
+                                            Background="White">
+                                        <Grid>
+                                            <TextBox Text="{Binding NovaHoraTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                     helpers:MaskHelper.Mask="Time"
+                                                     MaxLength="5"
+                                                     BorderThickness="0"
+                                                     Background="Transparent"
+                                                     FontSize="12"
+                                                     FontWeight="Medium"
+                                                     Foreground="{StaticResource BrushTextPrimary}"
+                                                     VerticalAlignment="Center"
+                                                     Margin="0,0,20,0"/>
+                                            <ui:SymbolIcon Symbol="Clock24" 
+                                                           FontSize="14" 
+                                                           Foreground="{StaticResource BrushTextSecondary}" 
+                                                           HorizontalAlignment="Right" 
+                                                           VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
                             </Grid>
-                        </Border>
 
-                        <!-- 4. Campo Observação -->
-                        <TextBlock Text="Observação" 
-                                   FontSize="12" 
-                                   FontWeight="Medium" 
-                                   Foreground="{StaticResource BrushTextPrimary}" 
-                                   Margin="0,0,0,6"/>
-                        <TextBox Text="{Binding NovaObservacao, UpdateSourceTrigger=PropertyChanged}"
-                                 Height="65"
-                                 TextWrapping="Wrap"
-                                 AcceptsReturn="True"
-                                 VerticalScrollBarVisibility="Auto"
-                                 BorderBrush="{StaticResource BrushBorder}"
-                                 BorderThickness="1"
-                                 FontSize="12"
-                                 Foreground="{StaticResource BrushTextPrimary}"
-                                 Padding="8"
-                                 Margin="0,0,0,20"/>
+                            <!-- 3. Campo Adicionar Serviço (Sem botão +, clique e selecione para adicionar imediatamente) -->
+                            <TextBlock Text="Adicionar serviço" 
+                                       FontSize="12" 
+                                       FontWeight="SemiBold" 
+                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                       Margin="0,0,0,5"/>
 
-                        <!-- Botão Salvar / Atualizar Agendamento -->
-                        <Button Content="{Binding BotaoSalvarTexto}"
-                                Command="{Binding SalvarNovoAgendamentoCommand}"
-                                Style="{StaticResource PrimaryActionButtonStyle}"
-                                HorizontalAlignment="Right"
-                                Padding="20,10"
-                                FontSize="13"
-                                FontWeight="SemiBold"/>
-                    </StackPanel>
-                </ScrollViewer>
+                            <Grid x:Name="ContainerInputServico" Margin="0,0,0,10">
+                                <!-- O INPUT ÚNICO: Campo clicável e digitável com dropdown de opções -->
+                                <Border x:Name="BorderInputServico"
+                                        Background="White"
+                                        BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Height="42"
+                                        Padding="10,6"
+                                        Cursor="IBeam"
+                                        PreviewMouseLeftButtonDown="BorderInputServico_PreviewMouseLeftButtonDown">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <ui:SymbolIcon Grid.Column="0" 
+                                                       Symbol="Search24" 
+                                                       FontSize="14" 
+                                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                                       VerticalAlignment="Center" 
+                                                       Margin="0,0,8,0"/>
+
+                                        <TextBox x:Name="TxtBuscaServico"
+                                                 Grid.Column="1"
+                                                 Text="{Binding BuscaServicoTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                 FontSize="12"
+                                                 Foreground="{StaticResource BrushTextPrimary}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Padding="0"
+                                                 Margin="0"
+                                                 VerticalContentAlignment="Center"
+                                                 GotFocus="TxtBuscaServico_GotFocus"
+                                                 PreviewKeyDown="TxtBuscaServico_PreviewKeyDown"/>
+
+                                        <!-- Placeholder quando o campo está vazio -->
+                                        <TextBlock Grid.Column="1"
+                                                   Text="Clique para selecionar ou digite para pesquisar serviço..."
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource BrushTextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Padding="0"
+                                                   Margin="0"
+                                                   IsHitTestVisible="False">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding BuscaServicoTexto}" Value=""/>
+                                                                <Condition Binding="{Binding IsKeyboardFocused, ElementName=TxtBuscaServico}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <!-- Botão de Seta para Abrir/Fechar a Lista de Opções -->
+                                        <ToggleButton x:Name="BtnToggleServicoPopup"
+                                                      Grid.Column="2"
+                                                      IsChecked="{Binding IsServicoPopupOpen, Mode=TwoWay}"
+                                                      Background="Transparent"
+                                                      BorderThickness="0"
+                                                      Padding="4,0"
+                                                      Cursor="Hand"
+                                                      Focusable="False">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border Background="Transparent">
+                                                        <ui:SymbolIcon Symbol="ChevronDown24" FontSize="12" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                        </ToggleButton>
+                                    </Grid>
+                                </Border>
+
+                                <!-- POPUP DO DROPDOWN DE SERVIÇOS -->
+                                <Popup x:Name="PopupServicos"
+                                       PlacementTarget="{Binding ElementName=BorderInputServico}"
+                                       Placement="Bottom"
+                                       IsOpen="{Binding IsServicoPopupOpen, Mode=TwoWay}"
+                                       StaysOpen="False"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Fade"
+                                       VerticalOffset="4"
+                                       Width="{Binding ActualWidth, ElementName=BorderInputServico}">
+                                    <Border Background="White"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Margin="0,4,0,10"
+                                            MaxHeight="260"
+                                            SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.16" Color="#201C1B"/>
+                                        </Border.Effect>
+
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <StackPanel>
+                                                <ItemsControl ItemsSource="{Binding ServicosDisponiveisFiltrados}" HorizontalContentAlignment="Stretch">
+                                                    <ItemsControl.ItemContainerStyle>
+                                                        <Style TargetType="FrameworkElement">
+                                                            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                                        </Style>
+                                                    </ItemsControl.ItemContainerStyle>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding DataContext.SelecionarServicoOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Background="Transparent"
+                                                                    BorderThickness="0"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    HorizontalContentAlignment="Stretch"
+                                                                    Height="46"
+                                                                    Padding="10,0"
+                                                                    Cursor="Hand">
+                                                                <Button.Template>
+                                                                    <ControlTemplate TargetType="Button">
+                                                                        <Border x:Name="SvcBorder" 
+                                                                                Background="#00FAF4F2" 
+                                                                                Padding="{TemplateBinding Padding}" 
+                                                                                HorizontalAlignment="Stretch"
+                                                                                VerticalAlignment="Stretch">
+                                                                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                                                        </Border>
+                                                                        <ControlTemplate.Triggers>
+                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                <Setter TargetName="SvcBorder" Property="Background" Value="#FAF4F2"/>
+                                                                            </Trigger>
+                                                                        </ControlTemplate.Triggers>
+                                                                    </ControlTemplate>
+                                                                </Button.Template>
+                                                                <Grid HorizontalAlignment="Stretch">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto"/> <!-- Duração Badge -->
+                                                                        <ColumnDefinition Width="*"/>    <!-- Nome do Serviço -->
+                                                                        <ColumnDefinition Width="Auto"/> <!-- Valor -->
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <!-- Badge Duração -->
+                                                                    <Border Grid.Column="0" 
+                                                                            Width="62" 
+                                                                            Height="22" 
+                                                                            CornerRadius="4" 
+                                                                            Background="#FDE8E4"
+                                                                            Margin="0,0,10,0" 
+                                                                            VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding DuracaoMinutos, StringFormat='{}{0} min'}" 
+                                                                                   FontSize="10" 
+                                                                                   FontWeight="SemiBold" 
+                                                                                   Foreground="#A84834"
+                                                                                   HorizontalAlignment="Center" 
+                                                                                   VerticalAlignment="Center"/>
+                                                                    </Border>
+
+                                                                    <!-- Nome do Serviço -->
+                                                                    <TextBlock Grid.Column="1" 
+                                                                               Text="{Binding NomeExibicao}" 
+                                                                               FontSize="12" 
+                                                                               FontWeight="SemiBold" 
+                                                                               Foreground="{StaticResource BrushTextPrimary}" 
+                                                                               VerticalAlignment="Center"
+                                                                               TextTrimming="CharacterEllipsis"/>
+
+                                                                    <!-- Preço -->
+                                                                    <TextBlock Grid.Column="2" 
+                                                                               Text="{Binding Valor, StringFormat='{}{0:C2}'}" 
+                                                                               FontSize="12" 
+                                                                               FontWeight="Bold" 
+                                                                               Foreground="{StaticResource BrushTextPrimary}" 
+                                                                               VerticalAlignment="Center" 
+                                                                               HorizontalAlignment="Right"
+                                                                               Margin="10,0,0,0"/>
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <!-- Mensagem quando não houver resultado na busca -->
+                                                <TextBlock Text="Nenhum serviço encontrado."
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource BrushTextSecondary}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,14">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ServicosDisponiveisFiltrados.Count}" Value="0">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <!-- Lista de Serviços no Agendamento em Espaço Fixo Reservado (ÚNICA ÁREA COM SCROLL) -->
+                            <TextBlock Text="Serviços do agendamento" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                            <Border Height="175"
+                                    Background="#FAF8F7" 
+                                    BorderBrush="#EAE3E1" 
+                                    BorderThickness="1" 
+                                    CornerRadius="8" 
+                                    Padding="10,8" 
+                                    Margin="0,0,0,10">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <Grid MinHeight="155">
+                                        <ItemsControl ItemsSource="{Binding ServicosSelecionadosParaNovo}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="White" 
+                                                            BorderBrush="#EDE7E5" 
+                                                            BorderThickness="1" 
+                                                            CornerRadius="8" 
+                                                            Padding="10,8" 
+                                                            Margin="0,0,0,6">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>    <!-- Nome do Serviço -->
+                                                                <ColumnDefinition Width="Auto"/> <!-- Tempo Estimado Editável -->
+                                                                <ColumnDefinition Width="Auto"/> <!-- Preço Editável -->
+                                                                <ColumnDefinition Width="Auto"/> <!-- Botão Excluir -->
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <!-- Nome do Serviço -->
+                                                            <TextBlock Grid.Column="0"
+                                                                       Text="{Binding NomeExibicao}" 
+                                                                       FontSize="12" 
+                                                                       FontWeight="SemiBold" 
+                                                                       Foreground="{StaticResource BrushTextPrimary}"
+                                                                       VerticalAlignment="Center"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Margin="0,0,8,0"/>
+
+                                                            <!-- Tempo Estimado Editável (HH:mm) -->
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                                <ui:SymbolIcon Symbol="Clock24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                                <TextBox Style="{StaticResource ModalTextBoxStyle}"
+                                                                         helpers:MaskHelper.Mask="Time"
+                                                                         Text="{Binding DuracaoTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                                         MaxLength="5"
+                                                                         Width="56"
+                                                                         Height="32"
+                                                                         Padding="4,2"
+                                                                         FontSize="12"
+                                                                         HorizontalContentAlignment="Center"
+                                                                         ToolTip="Tempo estimado (HH:mm)"/>
+                                                            </StackPanel>
+
+                                                            <!-- Preço Editável (Moeda) -->
+                                                            <Grid Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <TextBlock Grid.Column="0" Text="R$" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                                <TextBox Grid.Column="1"
+                                                                         Style="{StaticResource ModalTextBoxStyle}"
+                                                                         helpers:MaskHelper.Mask="Currency"
+                                                                         Text="{Binding ValorTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                                         MaxLength="10"
+                                                                         Width="76"
+                                                                         Height="32"
+                                                                         Padding="6,2"
+                                                                         FontSize="12"
+                                                                         HorizontalContentAlignment="Right"
+                                                                         ToolTip="Valor do serviço"/>
+                                                            </Grid>
+
+                                                            <!-- Botão Remover Serviço -->
+                                                            <Button Grid.Column="3"
+                                                                    Command="{Binding DataContext.RemoverServicoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Style="{StaticResource IconButtonTrashStyle}"
+                                                                    ToolTip="Remover serviço"
+                                                                    VerticalAlignment="Center">
+                                                                <ui:SymbolIcon Symbol="Delete24" FontSize="15" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                            </Button>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <!-- Mensagem se nenhum serviço foi adicionado (Centralizada no espaço fixo) -->
+                                        <TextBlock Text="Nenhum serviço adicionado ao agendamento."
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource BrushTextSecondary}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ServicosSelecionadosParaNovo.Count}" Value="0">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </ScrollViewer>
+                            </Border>
+
+                            <!-- Faixa de Totais (Tempo e Valor Total) -->
+                            <Border Background="#FDF8F5" 
+                                    CornerRadius="8" 
+                                    Padding="14,10" 
+                                    Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="Clock24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding TempoTotalMinutosTexto}" 
+                                                   FontSize="12" 
+                                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="1" 
+                                               Text="{Binding ValorTotalServicosTexto}" 
+                                               FontSize="13" 
+                                               FontWeight="Bold" 
+                                               Foreground="{StaticResource BrushTextPrimary}" 
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- 4. Campo Observação -->
+                            <TextBlock Text="Observação" 
+                                       FontSize="12" 
+                                       FontWeight="SemiBold" 
+                                       Foreground="{StaticResource BrushTextPrimary}" 
+                                       Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding NovaObservacao, UpdateSourceTrigger=PropertyChanged}"
+                                     Height="48"
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Style="{StaticResource ModalTextBoxStyle}"
+                                     Padding="8,6"
+                                     Margin="0,0,0,6"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Banner de Erro em Tempo Real (Validação Defensiva) -->
+                    <Border Grid.Row="2"
+                            Background="#FEECE9" 
+                            BorderBrush="#F8C8BF" 
+                            BorderThickness="1" 
+                            CornerRadius="8" 
+                            Padding="12,8" 
+                            Margin="0,4,0,10"
+                            Visibility="{Binding TemMensagemErroModal, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Symbol="Warning24" FontSize="16" Foreground="#D32F2F" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding MensagemErroModal}" FontSize="12" Foreground="#D32F2F" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Botão Salvar / Atualizar Agendamento -->
+                    <Button Grid.Row="3"
+                            Content="{Binding BotaoSalvarTexto}"
+                            Command="{Binding SalvarNovoAgendamentoCommand}"
+                            Style="{StaticResource PrimaryActionButtonStyle}"
+                            HorizontalAlignment="Right"
+                            Padding="22,9"
+                            FontSize="13"
+                            FontWeight="SemiBold"/>
+                </Grid>
             </Border>
         </Grid>
 
@@ -1148,6 +1672,421 @@
                                 </Style>
                             </Button.Resources>
                             <TextBlock Text="Confirmar cancelamento" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        </Button>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ========================================================================= -->
+        <!-- CAMADA 4: MODAL FLUTUANTE DO CALENDÁRIO IPHONE / ICLOUD                    -->
+        <!-- ========================================================================= -->
+        <Grid Visibility="{Binding IsModalICloudAberto, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalICloud_MouseLeftButtonDown"/>
+            <Border Background="White" 
+                    CornerRadius="16" 
+                    Width="620" 
+                    MaxHeight="720"
+                    Padding="28,24" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center">
+                <Border.RenderTransform>
+                    <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
+                                        Y="-20"/>
+                </Border.RenderTransform>
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="30" Direction="270" ShadowDepth="8" Opacity="0.22" Color="#201C1B"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- 0: Header -->
+                        <RowDefinition Height="*"/>    <!-- 1: Conteúdo rolável -->
+                        <RowDefinition Height="Auto"/> <!-- 2: Feedback / Mensagem -->
+                        <RowDefinition Height="Auto"/> <!-- 3: Ações do Rodapé -->
+                    </Grid.RowDefinitions>
+
+                    <!-- 0: Header do Modal -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:SymbolIcon Symbol="Phone24" FontSize="22" Foreground="#7B1FA2" Margin="0,0,10,0"/>
+                                <TextBlock Text="Calendário do iPhone (iCloud)" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                            </StackPanel>
+                            <TextBlock Text="Sincronização offline-first via CalDAV com recuperação e resolução de conflitos" 
+                                       FontSize="12" 
+                                       Foreground="{StaticResource BrushTextSecondary}" 
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" 
+                                Command="{Binding FecharModalICloudCommand}" 
+                                Style="{StaticResource ModalCloseButtonStyle}">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="16" Foreground="{StaticResource BrushTextSecondary}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- 1: Conteúdo Principal Rolável -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="0,0,6,0">
+
+                            <!-- Status Geral da Sincronização -->
+                            <Border Background="#FAF7FB"
+                                    BorderBrush="#E1BEE7"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16,12"
+                                    Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Ellipse Width="12" Height="12" Fill="{Binding ICloudStatusCor}" Margin="0,0,12,0" VerticalAlignment="Center"/>
+
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ICloudStatusTexto}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                        <TextBlock Text="{Binding ICloudUltimaSincronizacaoTexto}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Badges informativas -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Visibility="{Binding IsICloudConectado, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                Background="#E8F5E9" CornerRadius="6" Padding="8,4" Margin="4,0,0,0">
+                                            <TextBlock Text="CalDAV Ativo" FontSize="11" FontWeight="SemiBold" Foreground="#2E7D32"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- SEÇÃO 1: CONTA APPLE E CREDENCIAIS (SENHA DE APP) -->
+                            <Border Background="#FBF9F8"
+                                    BorderBrush="#E8E2E0"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16,14"
+                                    Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Conta Apple (iCloud CalDAV)" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,8"/>
+
+                                    <!-- Estado Conectado -->
+                                    <Grid Visibility="{Binding IsICloudConectado, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="#2E7D32" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Apple ID Conectado:" FontSize="12" FontWeight="SemiBold" Foreground="#1B5E20"/>
+                                                <TextBlock Text="{Binding ICloudEmailInput}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="6,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Sincronização contínua em segundo plano com detecção automática de conexão." 
+                                                       FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="22,4,0,0"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1"
+                                                Command="{Binding DesconectarICloudCommand}"
+                                                Style="{StaticResource OutlineActionButtonStyle}"
+                                                Padding="12,6"
+                                                FontSize="11"
+                                                Foreground="#D32F2F"
+                                                BorderBrush="#FFCDD2"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="LinkDismiss24" FontSize="13" Foreground="#D32F2F" Margin="0,0,4,0"/>
+                                                <TextBlock Text="Desconectar" FontSize="11" FontWeight="Medium" Foreground="#D32F2F"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Estado Desconectado / Configuração -->
+                                    <StackPanel Visibility="{Binding IsICloudConectado, Converter={StaticResource InverseBooleanConverter}}">
+                                        <TextBlock Text="Conecte seu Apple ID com uma Senha de App específica para sincronizar eventos diretamente com o app Calendário do iPhone."
+                                                   FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                        <TextBlock Text="Apple ID (e-mail da conta Apple):" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ICloudEmailInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ModalTextBoxStyle}"
+                                                 FontSize="12"
+                                                 Margin="0,0,0,8"/>
+
+                                        <TextBlock Text="Senha de App gerada na Apple (ex: abcd-efgh-ijkl-mnop):" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,4"/>
+                                        <TextBox Text="{Binding ICloudSenhaAppInput, UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ModalTextBoxStyle}"
+                                                 FontSize="12"
+                                                 Margin="0,0,0,8"/>
+
+                                        <Border Background="#F3E5F5" CornerRadius="6" Padding="10,6" Margin="0,0,0,10">
+                                            <TextBlock Text="💡 Para gerar a senha: acesse appleid.apple.com > Senhas específicas de apps > Gerar senha." 
+                                                       FontSize="11" Foreground="#4A148C" TextWrapping="Wrap"/>
+                                        </Border>
+
+                                        <Button Command="{Binding SalvarCredenciaisICloudCommand}"
+                                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                                HorizontalAlignment="Right"
+                                                Padding="16,8">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="Checkmark24" FontSize="14" Foreground="White" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Salvar e Conectar ao iPhone" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- SEÇÃO 2: FILA DE OPERAÇÕES OFFLINE (SQLITE) -->
+                            <Border Background="#FBF9F8"
+                                    BorderBrush="#E8E2E0"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16,14"
+                                    Margin="0,0,0,14">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Fila Offline Local (SQLite)" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                        <Border Grid.Column="1" Background="#FFF3E0" CornerRadius="6" Padding="8,2">
+                                            <TextBlock Text="{Binding ICloudOperacoesPendentesCount, StringFormat='{}{0} pendência(s)'}" FontSize="11" FontWeight="Bold" Foreground="#ED6C02"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <TextBlock Text="Operações criadas, editadas ou excluídas sem internet ficam salvas no SQLite com consolidação segura e são enviadas ao restaurar a conexão."
+                                               FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                    <!-- Lista de Operações Pendentes -->
+                                    <ItemsControl ItemsSource="{Binding ListaOperacoesPendentes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="#F5F3F1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Background="#ECE6E2" CornerRadius="4" Padding="6,2" Margin="0,0,8,0">
+                                                            <TextBlock Text="{Binding TipoOperacao}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                                        </Border>
+                                                        <TextBlock Grid.Column="1" Text="{Binding AgendamentoId, StringFormat='Agendamento #{0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding DataCriacao, StringFormat='{}{0:dd/MM HH:mm:ss}'}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock Text="✓ Nenhuma operação pendente. O banco local está 100% alinhado com a nuvem." 
+                                               FontSize="11" Foreground="#2E7D32" FontWeight="Medium" Margin="0,4,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding ICloudOperacoesPendentesCount}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- SEÇÃO 3: RESOLUÇÃO DE CONFLITOS (3-WAY DIFF) -->
+                            <Border Background="#FFFDE7"
+                                    BorderBrush="#FFF59D"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16,14"
+                                    Margin="0,0,0,14">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ICloudEstado}" Value="Conflito">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <ui:SymbolIcon Symbol="Warning24" FontSize="16" Foreground="#F57F17" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Conflitos Detectados (Modificações Simultâneas)" FontSize="13" FontWeight="Bold" Foreground="#E65100"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Os eventos abaixo foram modificados tanto no salão quanto no iPhone durante o período offline. Escolha qual versão deseja manter:"
+                                               FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                                    <ItemsControl ItemsSource="{Binding ListaConflitos}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="White" BorderBrush="#FFE082" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Titulo}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,2"/>
+                                                        <TextBlock Text="{Binding Descricao}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                            <Button Content="Manter Versão do Salão"
+                                                                    Command="{Binding DataContext.ResolverConflitoManterLocalCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding Id}"
+                                                                    Style="{StaticResource OutlineActionButtonStyle}"
+                                                                    FontSize="11"
+                                                                    Padding="10,5"
+                                                                    Margin="0,0,8,0"/>
+                                                            <Button Content="Manter Versão do iPhone"
+                                                                    Command="{Binding DataContext.ResolverConflitoManterRemotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding Id}"
+                                                                    Style="{StaticResource PrimaryActionButtonStyle}"
+                                                                    FontSize="11"
+                                                                    Padding="10,5"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- SEÇÃO 4: BATERIA DE 11 TESTES AUTOMATIZADOS DE ACEITAÇÃO -->
+                            <Border Background="#FAF8F6"
+                                    BorderBrush="#EDE7E3"
+                                    BorderThickness="1"
+                                    CornerRadius="12"
+                                    Padding="16,14"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="Validação Automatizada de Aceitação" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                            <TextBlock Text="11 critérios: offline-first, reconexão, consolidação, 3-way diff e idempotência" 
+                                                       FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                                        </StackPanel>
+
+                                        <Button Grid.Column="1"
+                                                Command="{Binding ExecutarTestesAutomatizadosCommand}"
+                                                IsEnabled="{Binding IsExecutandoTestes, Converter={StaticResource InverseBooleanConverter}}"
+                                                Style="{StaticResource OutlineActionButtonStyle}"
+                                                Padding="12,6"
+                                                VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="Play24" FontSize="13" Foreground="{StaticResource BrushAccent}" Margin="0,0,6,0"/>
+                                                <TextBlock Text="Executar 11 Testes" FontSize="11" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Log de Execução dos Testes -->
+                                    <TextBox Text="{Binding ResultadosTestesTexto, Mode=OneWay}"
+                                             IsReadOnly="True"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             FontFamily="Consolas, Cascadia Code, Courier New"
+                                             FontSize="10"
+                                             Height="95"
+                                             Background="#211E1D"
+                                             Foreground="#E0DDD9"
+                                             BorderThickness="0"
+                                             Padding="8"
+                                             Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- 2: Mensagem de Feedback -->
+                    <Border Grid.Row="2"
+                            CornerRadius="8"
+                            Padding="12,10"
+                            Margin="0,10,0,14"
+                            Visibility="{Binding TemFeedbackICloud, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#FEECE9"/>
+                                <Setter Property="BorderBrush" Value="#F8C8C0"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ICloudFeedbackSucesso}" Value="True">
+                                        <Setter Property="Background" Value="#E8F5E9"/>
+                                        <Setter Property="BorderBrush" Value="#C8E6C9"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Symbol="Info24" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center">
+                                <ui:SymbolIcon.Style>
+                                    <Style TargetType="ui:SymbolIcon">
+                                        <Setter Property="Foreground" Value="#D32F2F"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ICloudFeedbackSucesso}" Value="True">
+                                                <Setter Property="Foreground" Value="#2E7D32"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:SymbolIcon.Style>
+                            </ui:SymbolIcon>
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding ICloudFeedbackMensagem}" 
+                                       FontSize="12" 
+                                       TextWrapping="Wrap" 
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#C62828"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ICloudFeedbackSucesso}" Value="True">
+                                                <Setter Property="Foreground" Value="#1B5E20"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+
+                    <!-- 3: Ações do Rodapé -->
+                    <Grid Grid.Row="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Content="Fechar"
+                                Command="{Binding FecharModalICloudCommand}"
+                                Style="{StaticResource OutlineActionButtonStyle}"
+                                HorizontalAlignment="Left"
+                                Padding="16,8"/>
+
+                        <Button Grid.Column="1"
+                                Command="{Binding SincronizarICloudAgoraCommand}"
+                                IsEnabled="{Binding IsSincronizandoICloud, Converter={StaticResource InverseBooleanConverter}}"
+                                Style="{StaticResource PrimaryActionButtonStyle}"
+                                Padding="20,9">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ui:SymbolIcon Symbol="ArrowSync24" FontSize="15" Foreground="White" Margin="0,0,8,0"/>
+                                <TextBlock Text="Sincronizar agora" FontSize="13" FontWeight="SemiBold" Foreground="White"/>
+                            </StackPanel>
                         </Button>
                     </Grid>
                 </Grid>

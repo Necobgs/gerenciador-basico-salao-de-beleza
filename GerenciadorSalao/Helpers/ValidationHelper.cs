@@ -261,6 +261,175 @@ public static class ValidationHelper
         return FormatarMinutosParaHhMm(minutos);
     }
 
+    /// <summary>
+    /// Formata um texto de horário no padrão HH:mm em tempo real enquanto o usuário digita.
+    /// Exemplo: "9" -> "09:", "14" -> "14:", "143" -> "14:3", "1430" -> "14:30".
+    /// Trata limites de 24 horas (00-23) e minutos (00-59).
+    /// </summary>
+    public static string FormatarHorario(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        var temDoisPontos = raw.Contains(':');
+
+        // Se contiver ':', pode ser algo como "9:30", "09:30", "14:30", "9:5", "14:", "9:"
+        if (temDoisPontos)
+        {
+            var partes = raw.Split(':');
+            var horaStr = LimparApenasDigitos(partes[0]);
+            var minStr = partes.Length > 1 ? LimparApenasDigitos(partes[1]) : string.Empty;
+
+            if (string.IsNullOrEmpty(horaStr)) return string.Empty;
+
+            int.TryParse(horaStr, out var h);
+            if (h > 23) h = 23;
+
+            var horaFormatada = h.ToString("D2");
+
+            if (partes.Length == 1 || (partes.Length > 1 && string.IsNullOrEmpty(minStr)))
+            {
+                return $"{horaFormatada}:";
+            }
+
+            if (minStr.Length == 1)
+            {
+                var dMin = minStr[0];
+                if (dMin > '5')
+                {
+                    return $"{horaFormatada}:0{dMin}";
+                }
+                return $"{horaFormatada}:{dMin}";
+            }
+
+            int.TryParse(minStr.Length > 2 ? minStr[..2] : minStr, out var m);
+            if (m > 59) m = 59;
+            return $"{horaFormatada}:{m:D2}";
+        }
+
+        var digitos = LimparApenasDigitos(raw);
+        if (digitos.Length == 0) return string.Empty;
+
+        // 1 dígito digitado (sem ':')
+        if (digitos.Length == 1)
+        {
+            var d = digitos[0];
+            if (d >= '3')
+            {
+                return $"0{d}:";
+            }
+            return digitos;
+        }
+
+        // 2 dígitos digitados (sem ':')
+        if (digitos.Length == 2)
+        {
+            int.TryParse(digitos, out var h);
+            if (h > 23) h = 23;
+            return $"{h:D2}:";
+        }
+
+        // 3 dígitos digitados (sem ':')
+        if (digitos.Length == 3)
+        {
+            // Se o primeiro dígito for >= '3' (ex: "930", "815"), o usuário digitou hora de 1 dígito + minutos
+            if (digitos[0] >= '3')
+            {
+                int.TryParse(digitos[..1], out var hSingle);
+                int.TryParse(digitos[1..], out var mDouble);
+                if (mDouble > 59) mDouble = 59;
+                return $"{hSingle:D2}:{mDouble:D2}";
+            }
+            else
+            {
+                int.TryParse(digitos[..2], out var h);
+                if (h > 23) h = 23;
+
+                var dMin = digitos[2];
+                if (dMin > '5')
+                {
+                    return $"{h:D2}:0{dMin}";
+                }
+                return $"{h:D2}:{dMin}";
+            }
+        }
+
+        // 4 ou mais dígitos (sem ':')
+        {
+            int.TryParse(digitos[..2], out var h);
+            if (h > 23) h = 23;
+
+            int.TryParse(digitos.Substring(2, Math.Min(2, digitos.Length - 2)), out var m);
+            if (m > 59) m = 59;
+
+            return $"{h:D2}:{m:D2}";
+        }
+    }
+
+    /// <summary>
+    /// Normaliza qualquer formato incompleto para HH:mm válido (ex: "9" -> "09:00", "14" -> "14:00", "14:3" -> "14:30").
+    /// </summary>
+    public static string NormalizarHorario(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        var formatado = FormatarHorario(raw);
+        if (string.IsNullOrWhiteSpace(formatado)) return string.Empty;
+
+        // Se já está completo "HH:mm"
+        if (formatado.Length == 5 && formatado[2] == ':')
+            return formatado;
+
+        // Se termina com ":" (ex: "09:" ou "14:")
+        if (formatado.EndsWith(':'))
+            return $"{formatado}00";
+
+        // Se tem hora e 1 dígito de minuto (ex: "14:3")
+        if (formatado.Length == 4 && formatado[2] == ':')
+            return $"{formatado}0";
+
+        // Se tem apenas dígitos da hora sem ':' (ex: "1" ou "2")
+        if (formatado.Length <= 2 && int.TryParse(formatado, out var h))
+        {
+            if (h > 23) h = 23;
+            return $"{h:D2}:00";
+        }
+
+        return formatado;
+    }
+
+    /// <summary>
+    /// Valida um horário informado no formato HH:mm, normalizando se necessário.
+    /// </summary>
+    public static bool ValidarHorario(string? raw, out TimeSpan horario, out string? erro, bool obrigatorio = true)
+    {
+        horario = TimeSpan.Zero;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            if (obrigatorio)
+            {
+                erro = "O horário é obrigatório.";
+                return false;
+            }
+            erro = null;
+            return true;
+        }
+
+        var normalizado = NormalizarHorario(raw);
+        var partes = normalizado.Split(':');
+        if (partes.Length == 2 &&
+            int.TryParse(partes[0], out var h) &&
+            int.TryParse(partes[1], out var m) &&
+            h >= 0 && h <= 23 && m >= 0 && m <= 59)
+        {
+            horario = new TimeSpan(h, m, 0);
+            erro = null;
+            return true;
+        }
+
+        erro = "Informe um horário válido no formato HH:mm (ex: 09:30).";
+        return false;
+    }
+
     public static bool ValidarValorMonetario(string? valorTexto, out decimal valorDecimal, out string? erro, string campoNome = "item")
     {
         valorDecimal = 0;

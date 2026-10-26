@@ -12,130 +12,6 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-        <!-- Estilo ComboBox em Pílula (Ano completo ▾ / 2026 ▾) -->
-        <ControlTemplate x:Key="ComboBoxToggleButtonTemplate" TargetType="ToggleButton">
-            <Border x:Name="Border"
-                    Background="{StaticResource BrushSurface}"
-                    BorderBrush="{StaticResource BrushBorder}"
-                    BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="12,5">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <ContentPresenter Grid.Column="0"
-                                      Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                      ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
-                                      VerticalAlignment="Center"
-                                      Margin="0,0,6,0"/>
-                    <ui:SymbolIcon Grid.Column="1" 
-                                   Symbol="ChevronDown24" 
-                                   FontSize="12" 
-                                   Foreground="{StaticResource BrushTextSecondary}" 
-                                   VerticalAlignment="Center"/>
-                </Grid>
-            </Border>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
-                    <Setter TargetName="Border" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
-                </Trigger>
-                <Trigger Property="IsChecked" Value="True">
-                    <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource BrushPrimary}"/>
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <Style x:Key="PillComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Height" Value="32"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="SnapsToDevicePixels" Value="True"/>
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <ToggleButton Focusable="False"
-                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                          ClickMode="Press"
-                                          Template="{StaticResource ComboBoxToggleButtonTemplate}">
-                                <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
-                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
-                                                  VerticalAlignment="Center"/>
-                            </ToggleButton>
-
-                            <Popup x:Name="PART_Popup"
-                                   Placement="Bottom"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   PopupAnimation="Fade"
-                                   VerticalOffset="4">
-                                <Border x:Name="DropDownBorder"
-                                        Background="{StaticResource BrushSurface}"
-                                        BorderBrush="{StaticResource BrushBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                        MaxHeight="360"
-                                        Padding="4"
-                                        SnapsToDevicePixels="True">
-                                    <Border.Effect>
-                                        <DropShadowEffect BlurRadius="10" Direction="270" ShadowDepth="3" Opacity="0.12" Color="#34302F"/>
-                                    </Border.Effect>
-                                    <ScrollViewer SnapsToDevicePixels="True">
-                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="ItemContainerStyle">
-                <Setter.Value>
-                    <Style TargetType="ComboBoxItem">
-                        <Setter Property="Padding" Value="10,6"/>
-                        <Setter Property="Cursor" Value="Hand"/>
-                        <Setter Property="FontSize" Value="12"/>
-                        <Setter Property="Foreground" Value="{StaticResource BrushTextPrimary}"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ComboBoxItem">
-                                    <Border x:Name="ItemBorder"
-                                            Background="Transparent"
-                                            CornerRadius="6"
-                                            Padding="{TemplateBinding Padding}"
-                                            Margin="0,1">
-                                        <ContentPresenter />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource BrushSurfaceSubtle}"/>
-                                            <Setter Property="Foreground" Value="{StaticResource BrushPrimary}"/>
-                                        </Trigger>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="ItemBorder" Property="Background" Value="#66605E"/>
-                                            <Setter Property="Foreground" Value="White"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- Botão sutil circular / ícone do Header -->
         <Style x:Key="HeaderNavIconButtonStyle" TargetType="Button">
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -167,7 +43,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
 
         <!-- Estilo dos Botões de Navegação do Mês no Calendário (↑ / ↓) -->
         <Style x:Key="CalendarNavButtonStyle" TargetType="Button">
@@ -226,7 +101,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- 1. Header da Página -->
                 <RowDefinition Height="Auto"/> <!-- 2. Quatro Cards de Métricas -->
-                <RowDefinition Height="Auto"/> <!-- 3. Faturamento (Gráfico Dinâmico) + Clientes Especiais (Top 5) -->
+                <RowDefinition Height="Auto"/> <!-- 3. Serviços Populares + Clientes Mais Frequentes (Top 5) -->
                 <RowDefinition Height="Auto"/> <!-- 4. Agenda do Dia (Tabela) -->
             </Grid.RowDefinitions>
 
@@ -460,7 +335,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- CARD 1: FATURAMENTO DE HOJE -->
+                <!-- CARD 1: ATENDIMENTOS CONCLUÍDOS HOJE -->
                 <Border Grid.Column="0" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
@@ -476,14 +351,14 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="{Binding TituloFaturamentoDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Right">
-                                <ui:SymbolIcon Symbol="Wallet24" FontSize="17" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding TituloAtendimentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                            <Border Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
+                                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="17" Foreground="#2E7D32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
 
                         <TextBlock Grid.Row="1" 
-                                   Text="{Binding FaturamentoHoje, StringFormat='{}{0:C2}'}" 
+                                   Text="{Binding ComandasFinalizadasHoje}" 
                                    FontSize="22" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushTextPrimary}" 
@@ -491,8 +366,7 @@
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal">
                             <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Text="{Binding ComandasFinalizadasHoje}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
-                            <TextBlock Text=" comandas finalizadas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Text="comandas concluídas" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -625,14 +499,14 @@
                 </Border>
             </Grid>
 
-            <!-- ===================== 3. FATURAMENTO (GRÁFICO DINÂMICO) + CLIENTES ESPECIAIS (TOP 5) ===================== -->
+            <!-- ===================== 3. SERVIÇOS POPULARES + CLIENTES MAIS FREQUENTES (TOP 5) ===================== -->
             <Grid Grid.Row="2" Margin="0,0,0,20">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.4*"/>
+                    <ColumnDefinition Width="1.2*"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- CARD ESQUERDA: FATURAMENTO REAL COM GRÁFICO DINÂMICO -->
+                <!-- CARD ESQUERDA: SERVIÇOS MAIS PROCURADOS (POPULARIDADE OPERACIONAL) -->
                 <Border Grid.Column="0" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
@@ -642,198 +516,130 @@
                         Margin="0,0,6,0">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/> <!-- Título & Filtros -->
-                            <RowDefinition Height="Auto"/> <!-- Valor Acumulado & Legenda -->
-                            <RowDefinition Height="Auto"/> <!-- Gráfico Visual Dinâmico -->
-                            <RowDefinition Height="Auto"/> <!-- Labels dos Meses (Eixo X) -->
+                            <RowDefinition Height="Auto"/> <!-- Header -->
+                            <RowDefinition Height="*"/>    <!-- Lista Top 5 ou Empty State -->
                             <RowDefinition Height="Auto"/> <!-- Rodapé -->
                         </Grid.RowDefinitions>
 
-                        <!-- Cabeçalho do Card Faturamento -->
+                        <!-- Cabeçalho Serviços Populares -->
                         <Grid Grid.Row="0" Margin="0,0,0,14">
                             <StackPanel>
-                                <TextBlock Text="Faturamento" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
-                                <TextBlock Text="Uma visão dos resultados do seu salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                                <TextBlock Text="Serviços mais procurados" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                <TextBlock Text="Procedimentos com maior frequência no salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
 
-                            <!-- Filtros (Ano completo / Semestre e Ano) -->
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <ComboBox Style="{StaticResource PillComboBoxStyle}"
-                                          ItemsSource="{Binding PeriodosDisponiveis}"
-                                          SelectedItem="{Binding PeriodoSelecionado}"
-                                          Margin="0,0,6,0"/>
-                                <ComboBox Style="{StaticResource PillComboBoxStyle}"
-                                          ItemsSource="{Binding AnosDisponiveis}"
-                                          SelectedItem="{Binding AnoSelecionado}"/>
-                            </StackPanel>
+                            <Border Background="{StaticResource BrushSurfaceSubtle}" 
+                                    CornerRadius="4" 
+                                    Padding="8,3" 
+                                    HorizontalAlignment="Right" 
+                                    VerticalAlignment="Top">
+                                <TextBlock Text="POPULARIDADE" FontSize="10" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                            </Border>
                         </Grid>
 
-                        <!-- Valor Acumulado e Tag Dinâmica -->
-                        <Grid Grid.Row="1" Margin="0,0,0,14">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding FaturamentoAcumuladoAno, StringFormat='{}{0:C2}'}" 
-                                           FontSize="24" 
-                                           FontWeight="Bold" 
-                                           Foreground="{StaticResource BrushTextPrimary}" 
-                                           Margin="0,0,10,0"/>
-                                <Border Background="{StaticResource BrushSurfaceSubtle}" CornerRadius="4" Padding="8,4" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding PeriodoTagDescricao}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
-                                </Border>
-                            </StackPanel>
-
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Ellipse Width="8" Height="8" Fill="{StaticResource BrushPrimary}" Margin="0,0,6,0"/>
-                                <TextBlock Text="Faturamento" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- Gráfico Dinâmico Baseado no RelatorioService -->
-                        <Grid Grid.Row="2" Height="150" Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="58"/> <!-- Eixo Y Labels Dinâmicos -->
-                                <ColumnDefinition Width="*"/>   <!-- Área do Gráfico Dinâmico -->
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Labels Dinâmicos do Eixo Y -->
-                            <Grid Grid.Column="0">
-                                <TextBlock Text="{Binding YLabelMax}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,4,0,0"/>
-                                <TextBlock Text="{Binding YLabel75}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,32,0,0"/>
-                                <TextBlock Text="{Binding YLabel50}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,60,0,0"/>
-                                <TextBlock Text="{Binding YLabel25}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Top" Margin="0,88,0,0"/>
-                                <TextBlock Text="{Binding YLabel0}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Bottom" Margin="0,0,0,12"/>
-                            </Grid>
-
-                            <!-- Área do Gráfico em Viewbox Escalável -->
-                            <Grid Grid.Column="1">
-                                <Viewbox Stretch="Fill" Height="140" SnapsToDevicePixels="True">
-                                    <Grid Width="500" Height="140">
-                                        <!-- Linhas de Guia Horizontais Tracejadas -->
-                                        <Canvas>
-                                            <Line X1="0" Y1="10" X2="500" Y2="10" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                            <Line X1="0" Y1="38.75" X2="500" Y2="38.75" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                            <Line X1="0" Y1="67.5" X2="500" Y2="67.5" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                            <Line X1="0" Y1="96.25" X2="500" Y2="96.25" Stroke="{StaticResource BrushBorder}" StrokeDashArray="3 3"/>
-                                            <Line X1="0" Y1="125" X2="500" Y2="125" Stroke="{StaticResource BrushBorder}"/>
-                                        </Canvas>
-
-                                        <!-- Preenchimento Suave sob a Curva Dinâmica -->
-                                        <Path Stretch="None" Data="{Binding GraficoAreaGeometry}" Opacity="0.18">
-                                            <Path.Fill>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="#64423C" Offset="0.0"/>
-                                                    <GradientStop Color="#FEE9E6" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Path.Fill>
-                                        </Path>
-
-                                        <!-- Curva Dinâmica em Degrau Suave Rosé Marsala -->
-                                        <Path Stretch="None" 
-                                              Data="{Binding GraficoLinhaGeometry}" 
-                                              Stroke="{StaticResource BrushPrimary}" 
-                                              StrokeThickness="3" 
-                                              StrokeStartLineCap="Round" 
-                                              StrokeEndLineCap="Round" 
-                                              StrokeLineJoin="Round"/>
-
-                                        <!-- Pontos Interativos e Colunas de Hover com Tooltip -->
-                                        <ItemsControl ItemsSource="{Binding ChartMeses}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <Canvas IsItemsHost="True"/>
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemContainerStyle>
-                                                <Style TargetType="ContentPresenter">
-                                                    <Setter Property="Canvas.Left" Value="{Binding X}"/>
-                                                    <Setter Property="Canvas.Top" Value="{Binding Y}"/>
-                                                </Style>
-                                            </ItemsControl.ItemContainerStyle>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Margin="-16,-60,0,0" Width="32" Height="130" Background="Transparent" Cursor="Hand" ToolTipService.InitialShowDelay="50">
-                                                        <ToolTipService.ToolTip>
-                                                            <Border Background="{StaticResource BrushTextPrimary}" CornerRadius="6" Padding="8,4">
-                                                                <TextBlock Text="{Binding TooltipTexto}" Foreground="White" FontSize="11" FontWeight="Medium"/>
-                                                            </Border>
-                                                        </ToolTipService.ToolTip>
-                                                        <Ellipse Width="7" Height="7" 
-                                                                 Fill="{StaticResource BrushPrimary}" 
-                                                                 Stroke="White" 
-                                                                 StrokeThickness="1.5" 
-                                                                 HorizontalAlignment="Center" 
-                                                                 VerticalAlignment="Top" 
-                                                                 Margin="0,56.5,0,0"/>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-
-                                        <!-- Aviso quando o período selecionado não possui dados no banco -->
-                                        <Border Background="#F9F7F6" 
-                                                BorderBrush="{StaticResource BrushBorder}" 
-                                                BorderThickness="1" 
-                                                CornerRadius="8" 
-                                                Padding="14,8" 
-                                                HorizontalAlignment="Center" 
-                                                VerticalAlignment="Center" 
-                                                Visibility="{Binding SemDadosNoGrafico, Converter={StaticResource BoolToVis}}">
-                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <ui:SymbolIcon Symbol="Info24" FontSize="14" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,6,0"/>
-                                                <TextBlock Text="Nenhum faturamento registrado para o período." FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
-                                </Viewbox>
-                            </Grid>
-                        </Grid>
-
-                        <!-- Labels dos Meses (Eixo X) Dinâmicos -->
-                        <ItemsControl Grid.Row="3" ItemsSource="{Binding ChartMeses}" Margin="58,0,0,8">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="{Binding ColunasGrafico}"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                        <!-- Lista dos 5 Serviços Mais Procurados -->
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding TopServicos}" Visibility="{Binding TemTopServicos, Converter={StaticResource BoolToVis}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding MesNome}" FontSize="10" Foreground="{StaticResource BrushTextSecondary}" HorizontalAlignment="Center"/>
+                                    <Border BorderBrush="{StaticResource BrushBorder}" 
+                                            BorderThickness="0,0,0,1" 
+                                            Padding="0,9">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="26"/> <!-- 01, 02 -->
+                                                <ColumnDefinition Width="*"/>  <!-- Nome, Barra e Metadados -->
+                                                <ColumnDefinition Width="Auto"/> <!-- Percentual Badge -->
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Posição -->
+                                            <Border Grid.Column="0" 
+                                                    Width="22" Height="22" 
+                                                    CornerRadius="11" 
+                                                    Background="{StaticResource BrushSurfaceSubtle}" 
+                                                    HorizontalAlignment="Left" 
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Posicao}" 
+                                                           FontSize="10" 
+                                                           FontWeight="Bold" 
+                                                           Foreground="{StaticResource BrushPrimary}" 
+                                                           HorizontalAlignment="Center" 
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Detalhes do Serviço -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,12,0">
+                                                <TextBlock Text="{Binding Nome}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                                
+                                                <!-- Barra de Progresso Visual Proporcional -->
+                                                <ProgressBar Value="{Binding Percentual}" 
+                                                             Minimum="0" 
+                                                             Maximum="100" 
+                                                             Height="5" 
+                                                             BorderThickness="0" 
+                                                             Background="#F0EDE8" 
+                                                             Foreground="{StaticResource BrushPrimary}" 
+                                                             Margin="0,4,0,4"/>
+
+                                                <!-- Metadados: Duração e Quantidade Realizada -->
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ui:SymbolIcon Symbol="Clock24" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding DuracaoTexto}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text=" • " FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding AtendimentosTexto}" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- Badge de Percentual -->
+                                            <Border Grid.Column="2" 
+                                                    Background="{StaticResource BrushSurfaceSubtle}" 
+                                                    CornerRadius="6" 
+                                                    Padding="8,4" 
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding PercentualTexto}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushPrimary}"/>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- Rodapé do Card Faturamento -->
-                        <Grid Grid.Row="4" Margin="-22,14,-22,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/> <!-- Linha Divisória de ponta a ponta -->
-                                <RowDefinition Height="Auto"/> <!-- Textos e Botão -->
-                            </Grid.RowDefinitions>
+                        <!-- Estado Vazio para Serviços -->
+                        <Border Grid.Row="1" 
+                                Background="{StaticResource BrushBackground}" 
+                                BorderBrush="{StaticResource BrushBorder}" 
+                                BorderThickness="1" 
+                                CornerRadius="8" 
+                                Padding="20,24" 
+                                Margin="0,8"
+                                Visibility="{Binding SemTopServicos, Converter={StaticResource BoolToVis}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushSurfaceSubtle}" HorizontalAlignment="Center" Margin="0,0,0,10">
+                                    <ui:SymbolIcon Symbol="Sparkle24" FontSize="20" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Nenhum procedimento registrado" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Conclua atendimentos ou finalize comandas para listar os serviços mais populares." FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                            <Border Grid.Row="0" Height="1" Background="{StaticResource BrushBorder}"/>
-
-                            <Grid Grid.Row="1" Margin="22,12,22,0">
-                                <TextBlock Text="Considera apenas comandas pagas" 
-                                           FontSize="11" 
-                                           Foreground="{StaticResource BrushTextSecondary}" 
-                                           VerticalAlignment="Center"/>
-
-                                <Button HorizontalAlignment="Right" 
-                                        VerticalAlignment="Center"
-                                        Command="{Binding IrParaRelatoriosCommand}" 
-                                        Background="Transparent" 
-                                        BorderThickness="0" 
-                                        Padding="0" 
-                                        Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Ver relatório completo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}" VerticalAlignment="Center"/>
-                                        <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="12" Foreground="{StaticResource BrushPrimary}" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
+                        <!-- Rodapé: Ver todos os serviços -->
+                        <Grid Grid.Row="2" Margin="0,12,0,0">
+                            <Button HorizontalAlignment="Right" 
+                                    VerticalAlignment="Center"
+                                    Command="{Binding IrParaServicosCommand}" 
+                                    Background="Transparent" 
+                                    BorderThickness="0" 
+                                    Padding="0" 
+                                    Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Ver todos os serviços" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}" VerticalAlignment="Center"/>
+                                    <ui:SymbolIcon Symbol="ArrowUpRight24" FontSize="12" Foreground="{StaticResource BrushPrimary}" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </Grid>
                     </Grid>
                 </Border>
 
-                <!-- CARD DIREITA: CLIENTES ESPECIAIS (TOP 5) -->
+                <!-- CARD DIREITA: CLIENTES MAIS FREQUENTES (TOP 5 ATENDIMENTOS) -->
                 <Border Grid.Column="1" 
                         Background="{StaticResource BrushSurface}" 
                         BorderBrush="{StaticResource BrushBorder}" 
@@ -848,13 +654,11 @@
                             <RowDefinition Height="Auto"/> <!-- Rodapé -->
                         </Grid.RowDefinitions>
 
-                        <!-- Cabeçalho Clientes Especiais -->
-                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                        <!-- Cabeçalho Clientes Mais Frequentes -->
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Clientes especiais ✦" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
-                                </StackPanel>
-                                <TextBlock Text="Quem mais esteve com você" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
+                                <TextBlock Text="Clientes mais frequentes ✦" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                <TextBlock Text="Quem mais esteve presente no seu salão" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
                             </StackPanel>
 
                             <Border Background="{StaticResource BrushSurfaceSubtle}" 
@@ -866,19 +670,19 @@
                             </Border>
                         </Grid>
 
-                        <!-- Lista dos 5 Clientes quando existem dados -->
+                        <!-- Lista dos 5 Clientes Mais Frequentes -->
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding TopClientes}" Visibility="{Binding TemTopClientes, Converter={StaticResource BoolToVis}}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="{StaticResource BrushBorder}" 
                                             BorderThickness="0,0,0,1" 
-                                            Padding="0,8">
+                                            Padding="0,9">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="24"/> <!-- 01, 02 -->
                                                 <ColumnDefinition Width="38"/> <!-- Avatar Circle -->
-                                                <ColumnDefinition Width="*"/>  <!-- Nome & Atendimentos -->
-                                                <ColumnDefinition Width="Auto"/> <!-- R$ Total -->
+                                                <ColumnDefinition Width="*"/>  <!-- Nome & Telefone -->
+                                                <ColumnDefinition Width="Auto"/> <!-- Badge Atendimentos -->
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Posição -->
@@ -894,7 +698,7 @@
                                                     Width="30" Height="30" 
                                                     CornerRadius="15" 
                                                     Background="{Binding AvatarBg}" 
-                                                    HorizontalAlignment="Left"
+                                                    HorizontalAlignment="Left" 
                                                     VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Iniciais}" 
                                                            FontSize="11" 
@@ -904,26 +708,30 @@
                                                            VerticalAlignment="Center"/>
                                             </Border>
 
-                                            <!-- Nome e Atendimentos -->
-                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,0,0,0">
-                                                <TextBlock Text="{Binding Nome}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
-                                                <TextBlock Text="{Binding AtendimentosTexto}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
+                                            <!-- Nome e Telefone -->
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="4,0,8,0">
+                                                <TextBlock Text="{Binding Nome}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Telefone}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
                                             </StackPanel>
 
-                                            <!-- Total Gasto -->
-                                            <TextBlock Grid.Column="3" 
-                                                       Text="{Binding TotalGastoTexto}" 
-                                                       FontSize="12" 
-                                                       FontWeight="Bold" 
-                                                       Foreground="{StaticResource BrushTextPrimary}" 
-                                                       VerticalAlignment="Center"/>
+                                            <!-- Badge de Frequência / Atendimentos (Sem qualquer valor financeiro) -->
+                                            <Border Grid.Column="3" 
+                                                    Background="{StaticResource BrushSurfaceSubtle}" 
+                                                    CornerRadius="6" 
+                                                    Padding="8,4" 
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding AtendimentosTexto}" 
+                                                           FontSize="11" 
+                                                           FontWeight="SemiBold" 
+                                                           Foreground="{StaticResource BrushPrimary}"/>
+                                            </Border>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <!-- Estado Vazio quando não há clientes finalizados no período -->
+                        <!-- Estado Vazio quando não há clientes finalizados -->
                         <Border Grid.Row="1" 
                                 Background="{StaticResource BrushBackground}" 
                                 BorderBrush="{StaticResource BrushBorder}" 
@@ -937,7 +745,7 @@
                                     <ui:SymbolIcon Symbol="PeopleStar24" FontSize="20" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <TextBlock Text="Nenhum atendimento finalizado" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Finalize comandas no ano selecionado para visualizar o ranking." FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Finalize atendimentos para visualizar o ranking dos clientes mais frequentes." FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
@@ -948,7 +756,7 @@
                                 BorderThickness="0" 
                                 Padding="0" 
                                 Cursor="Hand" 
-                                HorizontalAlignment="Right"
+                                HorizontalAlignment="Right" 
                                 Margin="0,12,0,0">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Ver todos os clientes" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushPrimary}"/>
@@ -1004,11 +812,10 @@
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="65"/>  <!-- Horário -->
-                                <ColumnDefinition Width="160"/> <!-- Cliente -->
+                                <ColumnDefinition Width="180"/> <!-- Cliente -->
                                 <ColumnDefinition Width="*"/>   <!-- Serviços -->
-                                <ColumnDefinition Width="90"/>  <!-- Duração -->
-                                <ColumnDefinition Width="90"/>  <!-- Valor -->
-                                <ColumnDefinition Width="100"/> <!-- Status -->
+                                <ColumnDefinition Width="100"/> <!-- Duração -->
+                                <ColumnDefinition Width="110"/> <!-- Status -->
                                 <ColumnDefinition Width="24"/>  <!-- Seta -->
                             </Grid.ColumnDefinitions>
 
@@ -1016,8 +823,7 @@
                             <TextBlock Grid.Column="1" Text="Cliente" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
                             <TextBlock Grid.Column="2" Text="Serviços" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
                             <TextBlock Grid.Column="3" Text="Duração" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Grid.Column="4" Text="Valor" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Grid.Column="5" Text="Status" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
+                            <TextBlock Grid.Column="4" Text="Status" FontSize="11" FontWeight="Medium" Foreground="{StaticResource BrushTextSecondary}"/>
                         </Grid>
                     </Border>
 
@@ -1044,11 +850,10 @@
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="65"/>  <!-- Horário -->
-                                                        <ColumnDefinition Width="160"/> <!-- Cliente -->
+                                                        <ColumnDefinition Width="180"/> <!-- Cliente -->
                                                         <ColumnDefinition Width="*"/>   <!-- Serviços -->
-                                                        <ColumnDefinition Width="90"/>  <!-- Duração -->
-                                                        <ColumnDefinition Width="90"/>  <!-- Valor -->
-                                                        <ColumnDefinition Width="100"/> <!-- Status -->
+                                                        <ColumnDefinition Width="100"/> <!-- Duração -->
+                                                        <ColumnDefinition Width="110"/> <!-- Status -->
                                                         <ColumnDefinition Width="24"/>  <!-- Seta -->
                                                     </Grid.ColumnDefinitions>
 
@@ -1087,16 +892,8 @@
                                                         <TextBlock Text="{Binding Duracao}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
                                                     </StackPanel>
 
-                                                    <!-- Valor -->
-                                                    <TextBlock Grid.Column="4" 
-                                                               Text="{Binding Valor}" 
-                                                               FontSize="12" 
-                                                               FontWeight="Bold" 
-                                                               Foreground="{StaticResource BrushTextPrimary}" 
-                                                               VerticalAlignment="Center"/>
-
                                                     <!-- Badge de Status -->
-                                                    <Border Grid.Column="5" 
+                                                    <Border Grid.Column="4" 
                                                             Background="{StaticResource BrushSurfaceSubtle}" 
                                                             CornerRadius="10" 
                                                             Padding="8,3" 
@@ -1109,7 +906,7 @@
                                                     </Border>
 
                                                     <!-- Seta de Ação -->
-                                                    <ui:SymbolIcon x:Name="ChevronIcon" Grid.Column="6" Symbol="ChevronRight24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                                    <ui:SymbolIcon x:Name="ChevronIcon" Grid.Column="5" Symbol="ChevronRight24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                                 </Grid>
                                             </Border>
                                             <ControlTemplate.Triggers>

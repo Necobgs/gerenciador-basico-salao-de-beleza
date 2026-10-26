@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using GerenciadorSalao.Data;
 using GerenciadorSalao.Models;
+using GerenciadorSalao.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace GerenciadorSalao.Services;
@@ -7,12 +9,12 @@ namespace GerenciadorSalao.Services;
 public class AgendamentoService : IAgendamentoService
 {
     private readonly AppDbContext _context;
-    private readonly IGoogleCalendarService _googleCalendarService;
+    private readonly IICloudSyncService? _iCloudSyncService;
 
-    public AgendamentoService(AppDbContext context, IGoogleCalendarService googleCalendarService)
+    public AgendamentoService(AppDbContext context, IICloudSyncService? iCloudSyncService = null)
     {
         _context = context;
-        _googleCalendarService = googleCalendarService;
+        _iCloudSyncService = iCloudSyncService;
     }
 
     public async Task<List<Agendamento>> ObterPorPeriodoAsync(DateTime inicio, DateTime fim)
@@ -23,7 +25,7 @@ public class AgendamentoService : IAgendamentoService
             .Include(a => a.Comanda)
             .Include(a => a.AgendamentoServicos)
                 .ThenInclude(asv => asv.Servico)
-            .Where(a => a.DataHora >= inicio && a.DataHora <= fim)
+            .Where(a => a.DataHora >= inicio && a.DataHora <= fim && a.Status != StatusAgendamento.Cancelado)
             .OrderBy(a => a.DataHora)
             .ToListAsync();
     }
@@ -59,7 +61,7 @@ public class AgendamentoService : IAgendamentoService
             .FirstOrDefaultAsync(a => a.Id == id);
     }
 
-    public async Task<Agendamento> CriarAgendamentoAsync(int clienteId, DateTime dataHora, List<int> servicoIds, string? observacao = null)
+    public async Task<Agendamento> CriarAgendamentoAsync(int clienteId, DateTime dataHora, List<int> servicoIds, string? observacao = null, List<ItemServicoAgendamentoDto>? itensCustomizados = null)
     {
         var cliente = await _context.Clientes.FindAsync(clienteId);
         if (cliente == null)
@@ -75,7 +77,9 @@ public class AgendamentoService : IAgendamentoService
         if (servicos.Count == 0)
             throw new ArgumentException("Nenhum serviço válido foi localizado com os IDs informados.");
 
-        var tempoTotalMinutos = servicos.Sum(s => s.DuracaoMinutos);
+        var tempoTotalMinutos = itensCustomizados != null && itensCustomizados.Count > 0
+            ? itensCustomizados.Sum(i => i.DuracaoMinutos)
+            : servicos.Sum(s => s.DuracaoMinutos);
 
         var agendamento = new Agendamento
         {
@@ -109,6 +113,9 @@ public class AgendamentoService : IAgendamentoService
 
         foreach (var servico in servicos)
         {
+            var custom = itensCustomizados?.FirstOrDefault(i => i.ServicoId == servico.Id);
+            var valorUnitario = custom != null ? custom.Valor : servico.Valor;
+
             comanda.Itens.Add(new ComandaItem
             {
                 Comanda = comanda,
@@ -116,7 +123,7 @@ public class AgendamentoService : IAgendamentoService
                 ServicoId = servico.Id,
                 Descricao = servico.NomeExibicao,
                 Quantidade = 1,
-                ValorUnitario = servico.Valor
+                ValorUnitario = valorUnitario
             });
         }
 
@@ -128,25 +135,24 @@ public class AgendamentoService : IAgendamentoService
 
         await _context.SaveChangesAsync();
 
-        // Integração opcional com Google Agenda
-        try
+        // Integração offline-first com o Calendário do iPhone (iCloud)
+        if (_iCloudSyncService != null)
         {
-            var googleId = await _googleCalendarService.CriarEventoAsync(agendamento);
-            if (!string.IsNullOrEmpty(googleId))
+            try
             {
-                agendamento.GoogleEventId = googleId;
-                await _context.SaveChangesAsync();
+                await _iCloudSyncService.EnfileirarOperacaoAsync(agendamento.Id, agendamento.ICloudEventId, TipoOperacaoSincronizacao.Criar, agendamento);
+                _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
             }
-        }
-        catch
-        {
-            // Falhas no Google Agenda não impedem o salvamento local do agendamento
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AgendamentoService] Falha ao enfileirar para iPhone / iCloud: {ex.Message}");
+            }
         }
 
         return agendamento;
     }
 
-    public async Task<Agendamento> AtualizarAgendamentoAsync(int agendamentoId, int clienteId, DateTime dataHora, List<int> servicoIds, string? observacao = null)
+    public async Task<Agendamento> AtualizarAgendamentoAsync(int agendamentoId, int clienteId, DateTime dataHora, List<int> servicoIds, string? observacao = null, List<ItemServicoAgendamentoDto>? itensCustomizados = null)
     {
         var agendamento = await _context.Agendamentos
             .Include(a => a.Cliente)
@@ -173,7 +179,9 @@ public class AgendamentoService : IAgendamentoService
         if (servicos.Count == 0)
             throw new ArgumentException("Nenhum serviço válido foi localizado com os IDs informados.");
 
-        var tempoTotalMinutos = servicos.Sum(s => s.DuracaoMinutos);
+        var tempoTotalMinutos = itensCustomizados != null && itensCustomizados.Count > 0
+            ? itensCustomizados.Sum(i => i.DuracaoMinutos)
+            : servicos.Sum(s => s.DuracaoMinutos);
 
         agendamento.ClienteId = clienteId;
         agendamento.Cliente = cliente;
@@ -213,6 +221,9 @@ public class AgendamentoService : IAgendamentoService
 
             foreach (var servico in servicos)
             {
+                var custom = itensCustomizados?.FirstOrDefault(i => i.ServicoId == servico.Id);
+                var valorUnitario = custom != null ? custom.Valor : servico.Valor;
+
                 agendamento.Comanda.Itens.Add(new ComandaItem
                 {
                     Comanda = agendamento.Comanda,
@@ -220,25 +231,29 @@ public class AgendamentoService : IAgendamentoService
                     ServicoId = servico.Id,
                     Descricao = servico.NomeExibicao,
                     Quantidade = 1,
-                    ValorUnitario = servico.Valor
+                    ValorUnitario = valorUnitario
                 });
             }
 
             agendamento.Comanda.ValorTotal = agendamento.Comanda.CalcularTotalItens();
         }
 
+        agendamento.VersaoLocal++;
+        agendamento.SincronizadoComICloud = false;
+
         await _context.SaveChangesAsync();
 
-        // Sincroniza atualização com o Google Agenda se houver integração ativa
-        if (!string.IsNullOrEmpty(agendamento.GoogleEventId))
+        // Integração offline-first com o Calendário do iPhone (iCloud)
+        if (_iCloudSyncService != null)
         {
             try
             {
-                await _googleCalendarService.AtualizarEventoAsync(agendamento);
+                await _iCloudSyncService.EnfileirarOperacaoAsync(agendamento.Id, agendamento.ICloudEventId, TipoOperacaoSincronizacao.Atualizar, agendamento);
+                _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
             }
-            catch
+            catch (Exception ex)
             {
-                // Falhas externas não afetam a persistência local
+                Debug.WriteLine($"[AgendamentoService] Falha ao enfileirar atualização para iPhone / iCloud: {ex.Message}");
             }
         }
 
@@ -265,6 +280,8 @@ public class AgendamentoService : IAgendamentoService
             throw new InvalidOperationException("Agendamento não encontrado.");
 
         agendamento.Status = StatusAgendamento.Cancelado;
+        agendamento.VersaoLocal++;
+        agendamento.SincronizadoComICloud = false;
 
         // Se a comanda ainda estiver aberta, cancela a comanda também
         if (agendamento.Comanda != null && agendamento.Comanda.Status == StatusComanda.Aberta)
@@ -272,19 +289,21 @@ public class AgendamentoService : IAgendamentoService
             agendamento.Comanda.Status = StatusComanda.Cancelada;
         }
 
-        if (!string.IsNullOrEmpty(agendamento.GoogleEventId))
+        await _context.SaveChangesAsync();
+
+        // Enfileira atualização de cancelamento para o Calendário do iPhone (iCloud)
+        if (_iCloudSyncService != null)
         {
             try
             {
-                await _googleCalendarService.CancelarEventoAsync(agendamento.GoogleEventId);
+                await _iCloudSyncService.EnfileirarOperacaoAsync(agendamento.Id, agendamento.ICloudEventId, TipoOperacaoSincronizacao.Atualizar, agendamento);
+                _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignora falha externa ao cancelar
+                Debug.WriteLine($"[AgendamentoService] Falha ao enfileirar cancelamento no iCloud: {ex.Message}");
             }
         }
-
-        await _context.SaveChangesAsync();
     }
 
     public async Task ExcluirAgendamentoAsync(int agendamentoId)
@@ -295,6 +314,8 @@ public class AgendamentoService : IAgendamentoService
 
         if (agendamento == null)
             return;
+
+        var iCloudEventId = agendamento.ICloudEventId;
 
         // Se a comanda vinculada estiver aberta, remove a comanda também (hard delete).
         // Se já estiver finalizada, desvincula o agendamento para permitir o hard delete do agendamento mantendo a comanda contábil.
@@ -311,20 +332,22 @@ public class AgendamentoService : IAgendamentoService
             }
         }
 
-        if (!string.IsNullOrEmpty(agendamento.GoogleEventId))
-        {
-            try
-            {
-                await _googleCalendarService.CancelarEventoAsync(agendamento.GoogleEventId);
-            }
-            catch
-            {
-                // Ignora falha externa
-            }
-        }
-
         // Hard Delete definitivo do Agendamento
         _context.Agendamentos.Remove(agendamento);
         await _context.SaveChangesAsync();
+
+        // Enfileira exclusão para o Calendário do iPhone (iCloud)
+        if (_iCloudSyncService != null && !string.IsNullOrEmpty(iCloudEventId))
+        {
+            try
+            {
+                await _iCloudSyncService.EnfileirarOperacaoAsync(agendamentoId, iCloudEventId, TipoOperacaoSincronizacao.Excluir, null);
+                _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AgendamentoService] Falha ao enfileirar exclusão no iCloud: {ex.Message}");
+            }
+        }
     }
 }

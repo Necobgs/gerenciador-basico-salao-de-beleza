@@ -17,6 +17,13 @@ public class Agendamento
 
     public string? GoogleEventId { get; set; }
 
+    public string? ICloudEventId { get; set; }
+    public string? ICloudETag { get; set; }
+    public string? ICloudUrl { get; set; }
+    public int VersaoLocal { get; set; } = 1;
+    public DateTime? UltimaSincronizacaoICloud { get; set; }
+    public bool SincronizadoComICloud { get; set; }
+
     public int? ComandaId { get; set; }
     public Comanda? Comanda { get; set; }
 

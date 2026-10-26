@@ -1,5 +1,5 @@
+using System.Globalization;
 using System.Windows;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GerenciadorSalao.Helpers;
@@ -9,26 +9,25 @@ using GerenciadorSalao.Services;
 
 namespace GerenciadorSalao.ViewModels;
 
-public class ChartMesItem
-{
-    public int Mes { get; set; }
-    public string MesNome { get; set; } = string.Empty;
-    public decimal Valor { get; set; }
-    public string ValorFormatado { get; set; } = string.Empty;
-    public string TooltipTexto { get; set; } = string.Empty;
-    public double X { get; set; }
-    public double Y { get; set; }
-    public bool TemValor => Valor > 0;
-}
-
 public class TopClienteDashboardItem
 {
     public string Posicao { get; set; } = "01";
     public string Iniciais { get; set; } = string.Empty;
     public string Nome { get; set; } = string.Empty;
+    public string Telefone { get; set; } = string.Empty;
     public string AtendimentosTexto { get; set; } = string.Empty;
-    public string TotalGastoTexto { get; set; } = string.Empty;
     public string AvatarBg { get; set; } = "#FEE9E6";
+}
+
+public class TopServicoDashboardItem
+{
+    public string Posicao { get; set; } = "01";
+    public string Nome { get; set; } = string.Empty;
+    public int AtendimentosCount { get; set; }
+    public string AtendimentosTexto { get; set; } = string.Empty;
+    public string DuracaoTexto { get; set; } = string.Empty;
+    public double Percentual { get; set; }
+    public string PercentualTexto => $"{Percentual:0.#}%";
 }
 
 public class AgendaItemDashboard
@@ -39,7 +38,6 @@ public class AgendaItemDashboard
     public string NomeCliente { get; set; } = string.Empty;
     public string Servicos { get; set; } = string.Empty;
     public string Duracao { get; set; } = string.Empty;
-    public string Valor { get; set; } = string.Empty;
     public string Status { get; set; } = "Agendado";
 }
 
@@ -52,9 +50,7 @@ public partial class DashboardViewModel : ObservableObject
 
     public Action<string, object?>? NavigationRequested { get; set; }
 
-    [ObservableProperty]
-    private decimal _faturamentoHoje;
-
+    // Cards de Métricas Operacionais (Livre de Informações Sigilosas Financeiras)
     [ObservableProperty]
     private int _comandasFinalizadasHoje;
 
@@ -73,7 +69,7 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DataHojeFormatada))]
     [NotifyPropertyChangedFor(nameof(IsHoje))]
-    [NotifyPropertyChangedFor(nameof(TituloFaturamentoDia))]
+    [NotifyPropertyChangedFor(nameof(TituloAtendimentosDia))]
     [NotifyPropertyChangedFor(nameof(TituloAgendamentosDia))]
     [NotifyPropertyChangedFor(nameof(TituloAgendaTabela))]
     private DateTime _dataSelecionada = DateTime.Today;
@@ -89,27 +85,6 @@ public partial class DashboardViewModel : ObservableObject
 
     [ObservableProperty]
     private List<CalendarDayItem> _diasCalendario = new();
-
-    [ObservableProperty]
-    private string _periodoSelecionado = "Ano completo";
-
-    [ObservableProperty]
-    private List<string> _periodosDisponiveis = new() { "Ano completo", "1º Semestre", "2º Semestre" };
-
-    [ObservableProperty]
-    private int _anoSelecionado = DateTime.Today.Year;
-
-    [ObservableProperty]
-    private List<int> _anosDisponiveis = new() { DateTime.Today.Year };
-
-    [ObservableProperty]
-    private decimal _faturamentoAcumuladoAno;
-
-    [ObservableProperty]
-    private string _periodoTagDescricao = "Acumulado do ano";
-
-    partial void OnPeriodoSelecionadoChanged(string value) => _ = CarregarDadosAsync();
-    partial void OnAnoSelecionadoChanged(int value) => _ = CarregarDadosAsync();
 
     partial void OnDataSelecionadaChanged(DateTime value)
     {
@@ -129,57 +104,38 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _carregando;
 
+    // Agenda do Dia Selecionado
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TemAgendamentos))]
     [NotifyPropertyChangedFor(nameof(SemAgendamentos))]
     private List<AgendaItemDashboard> _agendaDoDia = new();
 
+    // Top 5 Clientes Mais Frequentes (Fidelidade / Mais Atendimentos)
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TemTopClientes))]
     [NotifyPropertyChangedFor(nameof(SemTopClientes))]
     private List<TopClienteDashboardItem> _topClientes = new();
 
-    // Propriedades do Gráfico Dinâmico
+    // Serviços Mais Procurados
     [ObservableProperty]
-    private Geometry? _graficoLinhaGeometry;
+    [NotifyPropertyChangedFor(nameof(TemTopServicos))]
+    [NotifyPropertyChangedFor(nameof(SemTopServicos))]
+    private List<TopServicoDashboardItem> _topServicos = new();
 
     [ObservableProperty]
-    private Geometry? _graficoAreaGeometry;
-
-    [ObservableProperty]
-    private List<ChartMesItem> _chartMeses = new();
-
-    [ObservableProperty]
-    private string _yLabelMax = "R$ 0";
-
-    [ObservableProperty]
-    private string _yLabel75 = "R$ 0";
-
-    [ObservableProperty]
-    private string _yLabel50 = "R$ 0";
-
-    [ObservableProperty]
-    private string _yLabel25 = "R$ 0";
-
-    [ObservableProperty]
-    private string _yLabel0 = "R$ 0";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SemDadosNoGrafico))]
-    private bool _temDadosNoGrafico;
-
-    [ObservableProperty]
-    private int _colunasGrafico = 12;
+    private int _totalServicosRealizados;
 
     // Propriedades Computadas para Bindings da UI
-    public bool SemDadosNoGrafico => !TemDadosNoGrafico;
     public bool TemAgendamentos => AgendaDoDia.Count > 0;
     public bool SemAgendamentos => AgendaDoDia.Count == 0;
     public bool TemTopClientes => TopClientes.Count > 0;
     public bool SemTopClientes => TopClientes.Count == 0;
+    public bool TemTopServicos => TopServicos.Count > 0;
+    public bool SemTopServicos => TopServicos.Count == 0;
+
     public bool IsHoje => DataSelecionada.Date == DateTime.Today;
     public string DataHojeFormatada => DataSelecionada.ToString("dd/MM/yyyy");
-    public string TituloFaturamentoDia => IsHoje ? "Faturamento de hoje" : "Faturamento do dia";
+    public string TituloAtendimentosDia => IsHoje ? "Atendimentos de hoje" : "Atendimentos do dia";
     public string TituloAgendamentosDia => IsHoje ? "Agendamentos hoje" : "Agendamentos do dia";
     public string TituloAgendaTabela => IsHoje ? "Agenda de hoje" : "Agenda do dia";
 
@@ -203,37 +159,24 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     public async Task CarregarDadosAsync()
     {
+        if (Carregando) return;
+        Carregando = true;
+
         try
         {
-            Carregando = true;
-
             var inicioDia = DataSelecionada.Date;
-            var fimDia = inicioDia.AddDays(1).AddTicks(-1);
+            var fimDia = DataSelecionada.Date.AddDays(1).AddTicks(-1);
 
-            // 1. Faturamento do dia selecionado
-            FaturamentoHoje = await _relatorioService.ObterFaturamentoTotalPeriodoAsync(inicioDia, fimDia);
-
-            // 2. Comandas abertas e finalizadas do dia
+            // 1. Comandas do dia selecionado
             var todasComandas = await _comandaService.ObterTodasAsync();
-            ComandasAbertas = todasComandas.Count(c => c.Status == StatusComanda.Aberta);
-            ComandasFinalizadasHoje = todasComandas.Count(c => c.Status == StatusComanda.Finalizada && c.DataFechamento?.Date == inicioDia);
+            var comandasDoDia = todasComandas
+                .Where(c => (c.DataFechamento ?? c.DataAbertura) >= inicioDia && (c.DataFechamento ?? c.DataAbertura) <= fimDia)
+                .ToList();
 
-            // Atualiza lista de anos disponíveis com base no banco e ano atual
-            var anosSet = new SortedSet<int> { DateTime.Today.Year, DateTime.Today.Year - 1, DateTime.Today.Year - 2 };
-            foreach (var c in todasComandas)
-            {
-                var dt = c.DataFechamento ?? c.DataAbertura;
-                anosSet.Add(dt.Year);
-            }
-            var anosOrdenados = anosSet.Reverse().ToList();
-            if (!AnosDisponiveis.SequenceEqual(anosOrdenados))
-            {
-                AnosDisponiveis = anosOrdenados;
-            }
-            if (!AnosDisponiveis.Contains(AnoSelecionado))
-            {
-                AnoSelecionado = AnosDisponiveis[0];
-            }
+            ComandasFinalizadasHoje = comandasDoDia.Count(c => c.Status == StatusComanda.Finalizada);
+
+            // 2. Comandas abertas no salão
+            ComandasAbertas = todasComandas.Count(c => c.Status == StatusComanda.Aberta);
 
             // 3. Agendamentos do dia selecionado
             var agendamentosHojeLista = await _agendamentoService.ObterPorPeriodoAsync(inicioDia, fimDia);
@@ -244,65 +187,55 @@ public partial class DashboardViewModel : ObservableObject
             var todosClientes = await _clienteService.ObterTodosAsync();
             TotalClientes = todosClientes.Count;
 
-            // 5. Faturamento mensal e acumulado do ano selecionado via RelatorioService
-            var faturamentoMensal = await _relatorioService.ObterFaturamentoMensalPorAnoAsync(AnoSelecionado);
-            List<FaturamentoMensalDto> dadosPeriodo;
-
-            if (PeriodoSelecionado == "1º Semestre")
+            // 5. Top Serviços Mais Populares (Operacional)
+            var servicosPopulares = await _relatorioService.ObterServicosMaisPopularesAsync(top: 5);
+            var topServicosList = new List<TopServicoDashboardItem>();
+            for (int i = 0; i < servicosPopulares.Count; i++)
             {
-                dadosPeriodo = faturamentoMensal.Where(f => f.Mes <= 6).ToList();
-                PeriodoTagDescricao = $"1º Semestre de {AnoSelecionado}";
+                var s = servicosPopulares[i];
+                topServicosList.Add(new TopServicoDashboardItem
+                {
+                    Posicao = (i + 1).ToString("D2"),
+                    Nome = s.NomeServico,
+                    AtendimentosCount = s.QuantidadeRealizada,
+                    AtendimentosTexto = s.QuantidadeRealizada == 1 ? "1 realização" : $"{s.QuantidadeRealizada} realizações",
+                    DuracaoTexto = s.DuracaoMediaMinutos > 0 ? ValidationHelper.FormatarDuracao(s.DuracaoMediaMinutos) : "Atendimento",
+                    Percentual = s.Percentual
+                });
             }
-            else if (PeriodoSelecionado == "2º Semestre")
-            {
-                dadosPeriodo = faturamentoMensal.Where(f => f.Mes >= 7).ToList();
-                PeriodoTagDescricao = $"2º Semestre de {AnoSelecionado}";
-            }
-            else
-            {
-                dadosPeriodo = faturamentoMensal.ToList();
-                PeriodoTagDescricao = $"Acumulado de {AnoSelecionado}";
-            }
+            TopServicos = topServicosList;
+            TotalServicosRealizados = servicosPopulares.Sum(s => s.QuantidadeRealizada);
 
-            FaturamentoAcumuladoAno = dadosPeriodo.Sum(f => f.Total);
-
-            // 5.1 Atualiza Geometria e Dados Dinâmicos do Gráfico
-            AtualizarGrafico(dadosPeriodo);
-
-            // 6. Top 5 Clientes formatados com iniciais e cores a partir do RelatorioService
-            var topRaw = await _relatorioService.ObterTopClientesAsync(5, AnoSelecionado);
+            // 6. Top 5 Clientes Mais Frequentes no Salão (Mais Atendimentos/Fidelidade)
+            var topFrequentes = await _relatorioService.ObterTopClientesFrequentesAsync(top: 5);
             var avatarColors = new[] { "#FCE4EC", "#FFF3E0", "#E1F5FE", "#F3E5F5", "#E8F5E9" };
 
-            var topList = new List<TopClienteDashboardItem>();
-            for (int i = 0; i < topRaw.Count; i++)
+            var topClientesList = new List<TopClienteDashboardItem>();
+            for (int i = 0; i < topFrequentes.Count; i++)
             {
-                var item = topRaw[i];
-                var nome = item.NomeCliente;
+                var tc = topFrequentes[i];
+                var nome = tc.NomeCliente;
                 var iniciais = ObterIniciais(nome);
 
-                topList.Add(new TopClienteDashboardItem
+                topClientesList.Add(new TopClienteDashboardItem
                 {
                     Posicao = (i + 1).ToString("D2"),
                     Iniciais = iniciais,
                     Nome = nome,
-                    AtendimentosTexto = $"{item.QuantidadeComandas} atendimento{(item.QuantidadeComandas > 1 ? "s" : "")}",
-                    TotalGastoTexto = item.TotalGasto.ToString("C2"),
+                    Telefone = tc.Telefone ?? string.Empty,
+                    AtendimentosTexto = tc.QuantidadeComandas == 1 ? "1 atendimento" : $"{tc.QuantidadeComandas} atendimentos",
                     AvatarBg = avatarColors[i % avatarColors.Length]
                 });
             }
-            TopClientes = topList;
+            TopClientes = topClientesList;
 
-            // 7. Lista detalhada de agendamentos reais do dia selecionado
+            // 7. Lista detalhada de agendamentos reais do dia (SEM dados sigilosos de valores)
             var agendaList = new List<AgendaItemDashboard>();
             foreach (var ag in agendamentosHojeLista.OrderBy(a => a.DataHora))
             {
                 var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente avulso";
                 var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
                 if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
-
-                var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0
-                    ? ag.Comanda.ValorTotal
-                    : ag.AgendamentoServicos.Sum(s => s.Servico?.Valor ?? 0);
 
                 string statusFormatado = ag.Status switch
                 {
@@ -320,7 +253,6 @@ public partial class DashboardViewModel : ObservableObject
                     NomeCliente = nomeCli,
                     Servicos = servicos,
                     Duracao = ValidationHelper.FormatarDuracao(ag.TempoTotalPrevistoMinutos),
-                    Valor = valorTotal.ToString("C2"),
                     Status = statusFormatado
                 });
             }
@@ -336,189 +268,17 @@ public partial class DashboardViewModel : ObservableObject
         }
     }
 
-    private static readonly string[] NomesMeses = 
-        { "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez" };
-    private static readonly string[] NomesMesesCompletos = 
-        { "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro" };
-
-    private void AtualizarGrafico(List<FaturamentoMensalDto> dados)
+    private static string ObterIniciais(string nomeCompleto)
     {
-        ColunasGrafico = dados.Count;
-        var maxValor = dados.Count > 0 ? dados.Max(d => d.Total) : 0m;
-        TemDadosNoGrafico = maxValor > 0;
-
-        decimal teto = CalcularTeto(maxValor);
-
-        // Labels do Eixo Y
-        YLabelMax = FormatarValorEixo(teto);
-        YLabel75 = FormatarValorEixo(teto * 0.75m);
-        YLabel50 = FormatarValorEixo(teto * 0.50m);
-        YLabel25 = FormatarValorEixo(teto * 0.25m);
-        YLabel0 = "R$ 0";
-
-        // Coordenadas de renderização no Viewbox (Width = 500, Height = 140)
-        // Baseline no Y = 125, topo da curva em Y = 12, altura útil = 113
-        const double baselineY = 125.0;
-        const double alturaUtil = 113.0;
-        const double margemEsquerda = 25.0;
-        const double larguraUtil = 450.0;
-
-        int n = dados.Count;
-        double stepX = n > 1 ? larguraUtil / (n - 1) : larguraUtil;
-
-        var pontos = new List<Point>();
-        var mesesItems = new List<ChartMesItem>();
-
-        for (int i = 0; i < n; i++)
-        {
-            var item = dados[i];
-            int mesIdx = Math.Clamp(item.Mes - 1, 0, 11);
-
-            double x = margemEsquerda + (i * stepX);
-            double ratio = teto > 0 ? (double)(item.Total / teto) : 0.0;
-            double y = baselineY - (ratio * alturaUtil);
-
-            pontos.Add(new Point(x, y));
-
-            mesesItems.Add(new ChartMesItem
-            {
-                Mes = item.Mes,
-                MesNome = NomesMeses[mesIdx],
-                Valor = item.Total,
-                ValorFormatado = item.Total.ToString("C2"),
-                TooltipTexto = $"{NomesMesesCompletos[mesIdx]}/{AnoSelecionado}: {item.Total:C2}",
-                X = x,
-                Y = y
-            });
-        }
-
-        ChartMeses = mesesItems;
-
-        var (linha, area) = GerarGeometriasGrafico(pontos, baselineY);
-        GraficoLinhaGeometry = linha;
-        GraficoAreaGeometry = area;
-    }
-
-    private static (Geometry Linha, Geometry Area) GerarGeometriasGrafico(List<Point> pontos, double baselineY)
-    {
-        if (pontos.Count == 0)
-        {
-            return (Geometry.Empty, Geometry.Empty);
-        }
-
-        var linhaFig = new PathFigure { StartPoint = pontos[0], IsClosed = false, IsFilled = false };
-        var areaFig = new PathFigure { StartPoint = new Point(pontos[0].X, baselineY), IsClosed = true, IsFilled = true };
-        areaFig.Segments.Add(new LineSegment(pontos[0], true));
-
-        if (pontos.Count == 1)
-        {
-            linhaFig.Segments.Add(new LineSegment(pontos[0], true));
-            areaFig.Segments.Add(new LineSegment(new Point(pontos[0].X, baselineY), true));
-        }
-        else
-        {
-            for (int i = 0; i < pontos.Count - 1; i++)
-            {
-                var p0 = i > 0 ? pontos[i - 1] : pontos[i];
-                var p1 = pontos[i];
-                var p2 = pontos[i + 1];
-                var p3 = (i + 2 < pontos.Count) ? pontos[i + 2] : p2;
-
-                // Catmull-Rom para Bezier Cúbica:
-                // CP1 = P1 + (P2 - P0) / 6
-                // CP2 = P2 - (P3 - P1) / 6
-                var cp1 = new Point(
-                    p1.X + (p2.X - p0.X) / 6.0,
-                    Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, 8.0, baselineY)
-                );
-                var cp2 = new Point(
-                    p2.X - (p3.X - p1.X) / 6.0,
-                    Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, 8.0, baselineY)
-                );
-
-                var bezier = new BezierSegment(cp1, cp2, p2, true);
-                linhaFig.Segments.Add(bezier);
-                areaFig.Segments.Add(bezier);
-            }
-
-            areaFig.Segments.Add(new LineSegment(new Point(pontos[^1].X, baselineY), true));
-        }
-
-        var linhaGeom = new PathGeometry();
-        linhaGeom.Figures.Add(linhaFig);
-        linhaGeom.Freeze();
-
-        var areaGeom = new PathGeometry();
-        areaGeom.Figures.Add(areaFig);
-        areaGeom.Freeze();
-
-        return (linhaGeom, areaGeom);
-    }
-
-    private static decimal CalcularTeto(decimal maxValor)
-    {
-        if (maxValor <= 0) return 1000m;
-        if (maxValor <= 500) return 500m;
-        if (maxValor <= 1000) return 1000m;
-        if (maxValor <= 2000) return 2000m;
-        if (maxValor <= 3000) return 3000m;
-        if (maxValor <= 5000) return 5000m;
-        if (maxValor <= 8000) return 8000m;
-        if (maxValor <= 10000) return 10000m;
-        if (maxValor <= 15000) return 15000m;
-        if (maxValor <= 20000) return 20000m;
-        if (maxValor <= 30000) return 30000m;
-        if (maxValor <= 50000) return 50000m;
-
-        return Math.Ceiling(maxValor / 10000m) * 10000m;
-    }
-
-    private static string FormatarValorEixo(decimal valor)
-    {
-        if (valor <= 0) return "R$ 0";
-        if (valor >= 1000)
-        {
-            var mil = valor / 1000m;
-            return mil % 1 == 0 
-                ? $"{mil:0} mil" 
-                : $"{mil:0.#} mil";
-        }
-        return valor.ToString("C0");
-    }
-
-    private static string ObterIniciais(string nome)
-    {
-        if (string.IsNullOrWhiteSpace(nome)) return "KB";
-        var partes = nome.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (partes.Length == 1) return partes[0].Substring(0, Math.Min(2, partes[0].Length)).ToUpper();
+        if (string.IsNullOrWhiteSpace(nomeCompleto)) return "CL";
+        var partes = nomeCompleto.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 1) return partes[0][..Math.Min(2, partes[0].Length)].ToUpper();
         return $"{partes[0][0]}{partes[^1][0]}".ToUpper();
     }
 
-    public void AtualizarDiasCalendario()
-    {
-        MesVisualizadoTexto = MesVisualizado.ToString("MMMM 'de' yyyy", new System.Globalization.CultureInfo("pt-BR"));
-
-        var dias = new List<CalendarDayItem>();
-        var primeiroDiaDoMes = new DateTime(MesVisualizado.Year, MesVisualizado.Month, 1);
-
-        int diff = (int)primeiroDiaDoMes.DayOfWeek; // 0 = Domingo
-        var dataInicio = primeiroDiaDoMes.AddDays(-diff);
-
-        for (int i = 0; i < 42; i++)
-        {
-            var dataAtual = dataInicio.AddDays(i);
-            dias.Add(new CalendarDayItem
-            {
-                Data = dataAtual,
-                IsMesAtual = dataAtual.Month == MesVisualizado.Month,
-                IsSelecionado = dataAtual.Date == DataSelecionada.Date,
-                IsHoje = dataAtual.Date == DateTime.Today
-            });
-        }
-
-        DiasCalendario = dias;
-    }
-
+    // ==========================================
+    // CONTROLES DO MINI-CALENDÁRIO FLUTUANTE
+    // ==========================================
     [RelayCommand]
     public void MesAnterior()
     {
@@ -589,4 +349,31 @@ public partial class DashboardViewModel : ObservableObject
 
     [RelayCommand]
     public void IrParaRelatorios() => NavigationRequested?.Invoke("Relatorios", null);
+
+    [RelayCommand]
+    public void IrParaServicos() => NavigationRequested?.Invoke("Servicos", null);
+
+    public void AtualizarDiasCalendario()
+    {
+        MesVisualizadoTexto = MesVisualizado.ToString("MMMM 'de' yyyy", new CultureInfo("pt-BR"));
+        var dias = new List<CalendarDayItem>();
+        var primeiroDiaDoMes = new DateTime(MesVisualizado.Year, MesVisualizado.Month, 1);
+
+        int diff = (int)primeiroDiaDoMes.DayOfWeek; // 0 = Domingo
+        var dataInicio = primeiroDiaDoMes.AddDays(-diff);
+
+        for (int i = 0; i < 42; i++)
+        {
+            var dataAtual = dataInicio.AddDays(i);
+            dias.Add(new CalendarDayItem
+            {
+                Data = dataAtual,
+                IsMesAtual = dataAtual.Month == MesVisualizado.Month,
+                IsSelecionado = dataAtual.Date == DataSelecionada.Date,
+                IsHoje = dataAtual.Date == DateTime.Today
+            });
+        }
+
+        DiasCalendario = dias;
+    }
 }

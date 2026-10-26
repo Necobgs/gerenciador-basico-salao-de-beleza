@@ -51,6 +51,52 @@ public partial class App : Application
             using var scope = Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             DbInitializer.Inicializar(dbContext);
+
+            // Inicia monitoramento de conectividade e sincronização em segundo plano
+            var iCloudSync = Services.GetRequiredService<IICloudSyncService>();
+            iCloudSync.IniciarMonitoramento();
+
+            // Suporte para execução direta dos testes automatizados via CLI (--run-tests)
+            if (e.Args.Any(a => a.Equals("--run-tests", StringComparison.OrdinalIgnoreCase) || 
+                                a.Equals("--test-icloud-sync", StringComparison.OrdinalIgnoreCase)))
+            {
+                Task.Run(async () =>
+                {
+                    GerenciadorSalao.Services.Tests.ValidationHelperTests.ExecutarTestes(msg => Console.WriteLine(msg));
+                    var resultados = await GerenciadorSalao.Services.Tests.ICloudSyncAcceptanceTests.ExecutarTodosOsTestesAsync(msg => Console.WriteLine(msg));
+                    int falhas = resultados.Count(r => !r.Passou);
+                    Environment.Exit(falhas > 0 ? 1 : 0);
+                }).Wait();
+                return;
+            }
+
+            if (e.Args.Any(a => a.Equals("--test-time-mask", StringComparison.OrdinalIgnoreCase)))
+            {
+                GerenciadorSalao.Services.Tests.ValidationHelperTests.ExecutarTestes(msg => Console.WriteLine(msg));
+                Environment.Exit(0);
+                return;
+            }
+
+            if (e.Args.Any(a => a.Equals("--verify-modal", StringComparison.OrdinalIgnoreCase)))
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var vm = Services.GetRequiredService<AgendamentosViewModel>();
+                        Console.WriteLine("Testando abertura do modal iCloud...");
+                        await vm.AbrirModalICloudAsync();
+                        Console.WriteLine($"SUCESSO: Modal aberto! IsModalICloudAberto={vm.IsModalICloudAberto}, Pendentes={vm.ListaOperacoesPendentes.Count}, Conflitos={vm.ListaConflitos.Count}");
+                        Environment.Exit(0);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"ERRO AO ABRIR MODAL: {ex}");
+                        Environment.Exit(1);
+                    }
+                }).Wait();
+                return;
+            }
         }
         catch (Exception ex)
         {
@@ -72,7 +118,10 @@ public partial class App : Application
         services.AddScoped<IAgendamentoService, AgendamentoService>();
         services.AddScoped<IComandaService, ComandaService>();
         services.AddScoped<IRelatorioService, RelatorioService>();
-        services.AddScoped<IGoogleCalendarService, GoogleCalendarService>();
+
+        // Serviços de Integração iPhone / iCloud Calendar
+        services.AddSingleton<IICloudCalendarProvider, ICloudCalDavProvider>();
+        services.AddSingleton<IICloudSyncService, ICloudSyncService>();
 
         // ViewModels
         services.AddSingleton<MainViewModel>();

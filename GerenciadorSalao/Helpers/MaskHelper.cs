@@ -14,7 +14,8 @@ public enum MaskType
     NumericOnly,
     Decimal,
     Currency,
-    Time
+    Time,
+    Duration
 }
 
 public static class MaskHelper
@@ -36,6 +37,7 @@ public static class MaskHelper
         if (d is not TextBox textBox) return;
 
         textBox.PreviewTextInput -= OnPreviewTextInput;
+        textBox.PreviewKeyDown -= OnPreviewKeyDown;
         textBox.TextChanged -= OnTextChanged;
         textBox.LostFocus -= OnLostFocus;
         DataObject.RemovePastingHandler(textBox, OnPaste);
@@ -43,6 +45,7 @@ public static class MaskHelper
         if ((MaskType)e.NewValue != MaskType.None)
         {
             textBox.PreviewTextInput += OnPreviewTextInput;
+            textBox.PreviewKeyDown += OnPreviewKeyDown;
             textBox.TextChanged += OnTextChanged;
             textBox.LostFocus += OnLostFocus;
             DataObject.AddPastingHandler(textBox, OnPaste);
@@ -115,6 +118,32 @@ public static class MaskHelper
         }
         else if (mask == MaskType.Time)
         {
+            // Permite apenas dígitos 0-9 e dois pontos ':'
+            if (!Regex.IsMatch(e.Text, @"^[\d:]+$"))
+            {
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Text == ":")
+            {
+                // Se o campo estiver vazio ou já contiver ':', bloqueia
+                if (string.IsNullOrWhiteSpace(textBox.Text) || (textBox.Text.Contains(':') && textBox.SelectionLength == 0))
+                {
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            var currentDigits = ValidationHelper.LimparApenasDigitos(textBox.Text);
+            // Limita a 4 dígitos para HHmm (caso não haja seleção de texto sendo substituída)
+            if (Regex.IsMatch(e.Text, @"^\d+$") && currentDigits.Length >= 4 && textBox.SelectionLength == 0)
+            {
+                e.Handled = true;
+            }
+        }
+        else if (mask == MaskType.Duration)
+        {
             // Permite dígitos 0-9, dois pontos ':' e letra 'h'/'H'
             if (!Regex.IsMatch(e.Text, @"^[\d:hH]+$"))
             {
@@ -125,6 +154,59 @@ public static class MaskHelper
             if ((textBox.Text ?? "").Length >= 8 && textBox.SelectionLength == 0)
             {
                 e.Handled = true;
+            }
+        }
+    }
+
+    private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox textBox) return;
+        var mask = GetMask(textBox);
+
+        if (mask == MaskType.Time)
+        {
+            if (e.Key == Key.Back && textBox.SelectionLength == 0 && textBox.CaretIndex > 0)
+            {
+                // Se o cursor estiver imediatamente após os dois pontos (ex: "14:|" ou "09:|")
+                if (textBox.CaretIndex == 3 && textBox.Text.Length >= 3 && textBox.Text[2] == ':')
+                {
+                    e.Handled = true;
+                    _isFormatting = true;
+                    try
+                    {
+                        var digits = ValidationHelper.LimparApenasDigitos(textBox.Text);
+                        var novoTexto = digits.Length > 1 ? digits[..1] : string.Empty;
+                        if (novoTexto == "0") novoTexto = string.Empty;
+                        textBox.Text = novoTexto;
+                        textBox.CaretIndex = novoTexto.Length;
+                    }
+                    finally
+                    {
+                        _isFormatting = false;
+                    }
+                }
+            }
+            else if (e.Key == Key.Delete && textBox.SelectionLength == 0)
+            {
+                // Se o cursor estiver antes dos dois pontos (ex: "14|:30")
+                if (textBox.CaretIndex == 2 && textBox.Text.Length > 2 && textBox.Text[2] == ':')
+                {
+                    e.Handled = true;
+                    _isFormatting = true;
+                    try
+                    {
+                        var digits = ValidationHelper.LimparApenasDigitos(textBox.Text);
+                        var hora = digits.Length >= 2 ? digits[..2] : digits;
+                        var minutoRestante = digits.Length >= 4 ? digits[3..] : string.Empty;
+                        var novoTexto = string.IsNullOrEmpty(minutoRestante) ? $"{hora}:" : $"{hora}:{minutoRestante}";
+                        textBox.Text = novoTexto;
+                        textBox.CaretIndex = 3;
+                    }
+                    finally
+                    {
+                        _isFormatting = false;
+                    }
+                }
             }
         }
     }
@@ -173,6 +255,35 @@ public static class MaskHelper
         }
         else if (mask == MaskType.Time)
         {
+            var digits = ValidationHelper.LimparApenasDigitos(text);
+            if (string.IsNullOrEmpty(digits))
+            {
+                e.CancelCommand();
+                return;
+            }
+
+            var formatado = ValidationHelper.FormatarHorario(text);
+            if (!string.IsNullOrEmpty(formatado))
+            {
+                e.CancelCommand();
+                _isFormatting = true;
+                try
+                {
+                    textBox.Text = formatado;
+                    textBox.CaretIndex = formatado.Length;
+                }
+                finally
+                {
+                    _isFormatting = false;
+                }
+            }
+            else
+            {
+                e.CancelCommand();
+            }
+        }
+        else if (mask == MaskType.Duration)
+        {
             if (!Regex.IsMatch(text, @"^[\d:hH\s]+$"))
             {
                 e.CancelCommand();
@@ -206,7 +317,7 @@ public static class MaskHelper
                 return;
             }
 
-            if (mask == MaskType.Time)
+            if (mask == MaskType.Duration)
             {
                 var lower = raw.ToLower();
                 if (raw != lower)
@@ -222,6 +333,7 @@ public static class MaskHelper
             {
                 MaskType.Phone => ValidationHelper.FormatarTelefone(raw),
                 MaskType.Cpf => ValidationHelper.FormatarCpf(raw),
+                MaskType.Time => ValidationHelper.FormatarHorario(raw),
                 MaskType.NumericOnly => ValidationHelper.LimparApenasDigitos(raw),
                 _ => raw
             };
@@ -265,6 +377,24 @@ public static class MaskHelper
             }
         }
         else if (mask == MaskType.Time)
+        {
+            if (string.IsNullOrWhiteSpace(textBox.Text)) return;
+
+            var normalizado = ValidationHelper.NormalizarHorario(textBox.Text);
+            if (textBox.Text != normalizado)
+            {
+                _isFormatting = true;
+                try
+                {
+                    textBox.Text = normalizado;
+                }
+                finally
+                {
+                    _isFormatting = false;
+                }
+            }
+        }
+        else if (mask == MaskType.Duration)
         {
             if (string.IsNullOrWhiteSpace(textBox.Text)) return;
 

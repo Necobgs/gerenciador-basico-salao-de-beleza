@@ -45,6 +45,102 @@ public static class DbInitializer
             System.Diagnostics.Debug.WriteLine($"[DbInitializer] Migração Servicos: {ex.Message}");
         }
 
+        // Migração defensiva para colunas de sincronização com iCloud / iPhone em Agendamentos
+        try
+        {
+            using var cmd = context.Database.GetDbConnection().CreateCommand();
+            context.Database.OpenConnection();
+            cmd.CommandText = "PRAGMA table_info(Agendamentos);";
+            using var reader = cmd.ExecuteReader();
+            var colunasExistentes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            while (reader.Read())
+            {
+                colunasExistentes.Add(reader.GetString(1));
+            }
+            reader.Close();
+
+            if (!colunasExistentes.Contains("ICloudEventId"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN ICloudEventId TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!colunasExistentes.Contains("ICloudETag"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN ICloudETag TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!colunasExistentes.Contains("ICloudUrl"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN ICloudUrl TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!colunasExistentes.Contains("VersaoLocal"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN VersaoLocal INTEGER NOT NULL DEFAULT 1;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!colunasExistentes.Contains("UltimaSincronizacaoICloud"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN UltimaSincronizacaoICloud TEXT NULL;";
+                cmd.ExecuteNonQuery();
+            }
+            if (!colunasExistentes.Contains("SincronizadoComICloud"))
+            {
+                cmd.CommandText = "ALTER TABLE Agendamentos ADD COLUMN SincronizadoComICloud INTEGER NOT NULL DEFAULT 0;";
+                cmd.ExecuteNonQuery();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DbInitializer] Migração Agendamentos iCloud: {ex.Message}");
+        }
+
+        // Criação defensiva das tabelas de sincronização com iCloud / iPhone (caso o banco já existisse)
+        try
+        {
+            using var cmd = context.Database.GetDbConnection().CreateCommand();
+            context.Database.OpenConnection();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS OperacoesSincronizacao (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    AgendamentoId INTEGER NULL,
+                    ICloudEventId TEXT NULL,
+                    TipoOperacao INTEGER NOT NULL,
+                    VersaoLocal INTEGER NOT NULL DEFAULT 1,
+                    CriadoEm TEXT NOT NULL,
+                    AtualizadoEm TEXT NULL,
+                    Tentativas INTEGER NOT NULL DEFAULT 0,
+                    UltimoErro TEXT NULL,
+                    Estado INTEGER NOT NULL DEFAULT 0,
+                    PayloadJson TEXT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS IX_OperacoesSincronizacao_Estado ON OperacoesSincronizacao (Estado);
+                CREATE INDEX IF NOT EXISTS IX_OperacoesSincronizacao_AgendamentoId ON OperacoesSincronizacao (AgendamentoId);
+
+                CREATE TABLE IF NOT EXISTS ConflitosSincronizacao (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    AgendamentoId INTEGER NULL,
+                    ICloudEventId TEXT NULL,
+                    Titulo TEXT NOT NULL,
+                    Descricao TEXT NULL,
+                    DadosLocaisJson TEXT NULL,
+                    DadosRemotosJson TEXT NULL,
+                    CriadoEm TEXT NOT NULL,
+                    Resolvido INTEGER NOT NULL DEFAULT 0,
+                    ResolvidoEm TEXT NULL,
+                    ResolucaoEscolhida TEXT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS IX_ConflitosSincronizacao_Resolvido ON ConflitosSincronizacao (Resolvido);
+            ";
+            cmd.ExecuteNonQuery();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DbInitializer] Criação tabelas iCloud: {ex.Message}");
+        }
+
         // Atualização de registros existentes que ainda não possuam DuracaoFormatada ou tenham a descrição unificada anterior
         try
         {

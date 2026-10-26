@@ -23,7 +23,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
     private string _titulo = "Comandas";
 
     [ObservableProperty]
-    private string _subtitulo = "Do primeiro cuidado ao último detalhe do atendimento.";
+    private string _subtitulo = "Do primeiro cuidado ao ├║ltimo detalhe do atendimento.";
 
     [ObservableProperty]
     private string _termoBusca = string.Empty;
@@ -165,7 +165,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
     private bool _semAgendamentosPendentes = true;
 
     // ==========================================
-    // MODAL 2: EDIÇÃO / CRIAÇÃO / VISUALIZAÇÃO
+    // MODAL 2: EDI├ç├âO / CRIA├ç├âO / VISUALIZA├ç├âO
     // ==========================================
     [ObservableProperty]
     private bool _isModalEdicaoAberto;
@@ -189,7 +189,50 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
     private Cliente? _formClienteSelecionado;
 
     [ObservableProperty]
+    private string _buscaClienteTexto = string.Empty;
+
+    [ObservableProperty]
+    private bool _isClientePopupOpen;
+
+    [ObservableProperty]
     private ObservableCollection<Cliente> _clientesDisponiveis = new();
+
+    [ObservableProperty]
+    private ObservableCollection<Cliente> _clientesDisponiveisFiltrados = new();
+
+    partial void OnBuscaClienteTextoChanged(string value)
+    {
+        FiltrarClientesDisponiveis();
+        if (PodeEditar && (IsClientePopupOpen || !string.IsNullOrEmpty(value)))
+        {
+            IsClientePopupOpen = true;
+        }
+    }
+
+    [RelayCommand]
+    public void SelecionarClienteOption(Cliente? cliente)
+    {
+        if (cliente == null || !PodeEditar) return;
+        FormClienteSelecionado = cliente;
+        BuscaClienteTexto = cliente.NomeExibicao;
+        IsClientePopupOpen = false;
+    }
+
+    public void FiltrarClientesDisponiveis()
+    {
+        var termo = BuscaClienteTexto?.Trim() ?? string.Empty;
+        ClientesDisponiveisFiltrados.Clear();
+
+        var query = string.IsNullOrEmpty(termo)
+            ? ClientesDisponiveis
+            : ClientesDisponiveis.Where(c => c.NomeExibicao.Contains(termo, StringComparison.OrdinalIgnoreCase) ||
+                                            (!string.IsNullOrEmpty(c.Telefone) && c.Telefone.Contains(termo)));
+
+        foreach (var c in query)
+        {
+            ClientesDisponiveisFiltrados.Add(c);
+        }
+    }
 
     private readonly List<ItemDisponivelOption> _todosItensCache = new();
 
@@ -262,7 +305,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
     private string? _formMensagemErro;
 
     // ==========================================
-    // MODAL 3: EXCLUSÃO DE COMANDA
+    // MODAL 3: EXCLUS├âO DE COMANDA
     // ==========================================
     [ObservableProperty]
     private bool _isModalExcluirAberto;
@@ -329,7 +372,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
                 Id = c.Id,
                 NumeroTexto = $"#{c.Id}",
                 ClienteId = c.ClienteId,
-                ClienteNome = c.Cliente?.Nome ?? "Cliente não identificado",
+                ClienteNome = c.Cliente?.Nome ?? "Cliente n├úo identificado",
                 DescricaoItens = descTexto,
                 DataTexto = dataExibicao,
                 DataHora = c.DataAbertura,
@@ -402,8 +445,9 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
         {
             ClientesDisponiveis.Add(cli);
         }
+        FiltrarClientesDisponiveis();
 
-        // Carrega catálogo de serviços e produtos para seleção no modal
+        // Carrega cat├ílogo de servi├ºos e produtos para sele├º├úo no modal
         var servicos = await _servicoService.ObterTodosAsync(apenasAtivos: true);
         var produtos = await _produtoService.ObterTodosAsync(apenasAtivos: true);
 
@@ -417,7 +461,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
                 Nome = s.NomeExibicao,
                 Preco = s.Valor,
                 DuracaoMinutos = s.DuracaoMinutos,
-                DisplayText = $"[Serviço] {s.NomeExibicao} - {s.Valor.ToString("C2", PtBrCulture)}"
+                DisplayText = $"[Servi├ºo] {s.NomeExibicao} - {s.Valor.ToString("C2", PtBrCulture)}"
             });
         }
 
@@ -448,7 +492,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
             : _todosItensCache.Where(i => i.Nome.Contains(termo, StringComparison.OrdinalIgnoreCase)
                                        || i.DisplayText.Contains(termo, StringComparison.OrdinalIgnoreCase));
 
-        // Exibe catálogo amplo para não esconder itens no dropdown com scroll
+        // Exibe cat├ílogo amplo para n├úo esconder itens no dropdown com scroll
         foreach (var item in lista.Take(100))
         {
             ItensDisponiveis.Add(item);
@@ -517,12 +561,12 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
 
         if (agItem.ComandaId.HasValue && agItem.ComandaId.Value > 0)
         {
-            // Abre comanda já gerada para o agendamento
+            // Abre comanda j├í gerada para o agendamento
             await AbrirEditarComandaPorIdAsync(agItem.ComandaId.Value);
         }
         else
         {
-            // Cria comanda avulsa já vinculada ao cliente e carrega agendamento
+            // Cria comanda avulsa j├í vinculada ao cliente e carrega agendamento
             await AbrirCriarComandaDoZeroAsync(agItem.ClienteId);
         }
     }
@@ -622,9 +666,11 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
                 Descricao = it.Descricao,
                 Detalhe = detalhe,
                 DuracaoMinutos = duracao,
+                DuracaoTexto = ValidationHelper.FormatarMinutosParaHhMm(duracao),
                 Quantidade = it.Quantidade,
                 ValorUnitario = it.ValorUnitario,
-                ValorUnitarioTexto = it.ValorUnitario.ToString("N2", PtBrCulture)
+                ValorUnitarioTexto = it.ValorUnitario.ToString("N2", PtBrCulture),
+                OnChanged = RecalcularTotaisFormulario
             };
 
             formItem.RecalcularSubtotal();
@@ -677,9 +723,11 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
             Descricao = option.Nome,
             Detalhe = detalhe,
             DuracaoMinutos = option.DuracaoMinutos,
+            DuracaoTexto = ValidationHelper.FormatarMinutosParaHhMm(option.DuracaoMinutos),
             Quantidade = 1,
             ValorUnitario = option.Preco,
-            ValorUnitarioTexto = option.Preco.ToString("N2", PtBrCulture)
+            ValorUnitarioTexto = option.Preco.ToString("N2", PtBrCulture),
+            OnChanged = RecalcularTotaisFormulario
         };
 
         novoItem.RecalcularSubtotal();
@@ -761,7 +809,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
 
             if (FormItens.Count == 0)
             {
-                FormMensagemErro = "Adicione ao menos um serviço ou produto à comanda.";
+                FormMensagemErro = "Adicione ao menos um servi├ºo ou produto ├á comanda.";
                 return;
             }
 
@@ -816,7 +864,7 @@ public partial class ComandasViewModel : ObservableObject, IModalHost
     }
 
     // ==========================================
-    // FLUXO MODAL 3: EXCLUSÃO DE COMANDA
+    // FLUXO MODAL 3: EXCLUS├âO DE COMANDA
     // ==========================================
     [RelayCommand]
     public void AbrirExcluirComanda(ComandaListItemViewModel item)
@@ -882,10 +930,20 @@ public partial class ComandaItemFormViewModel : ObservableObject
     public int? ProdutoId { get; set; }
     public string Descricao { get; set; } = string.Empty;
     public string Detalhe { get; set; } = string.Empty;
-    public int DuracaoMinutos { get; set; }
+
+    public bool IsServico => Tipo == TipoItemComanda.Servico;
+    public bool IsProduto => Tipo == TipoItemComanda.Produto;
+
+    [ObservableProperty]
+    private int _duracaoMinutos;
+
+    [ObservableProperty]
+    private string _duracaoTexto = "0:00";
 
     [ObservableProperty]
     private int _quantidade = 1;
+
+    public string QuantidadeTextoExibicao => $"{Quantidade}x";
 
     [ObservableProperty]
     private decimal _valorUnitario;
@@ -897,9 +955,30 @@ public partial class ComandaItemFormViewModel : ObservableObject
     {
         if (ValidationHelper.ValidarValorMonetario(value, out var parsed, out _))
         {
-            ValorUnitario = parsed;
-            RecalcularSubtotal();
+            _valorUnitario = parsed;
         }
+        RecalcularSubtotal();
+        OnChanged?.Invoke();
+    }
+
+    partial void OnQuantidadeChanged(int value)
+    {
+        RecalcularSubtotal();
+        OnPropertyChanged(nameof(QuantidadeTextoExibicao));
+        OnChanged?.Invoke();
+    }
+
+    partial void OnDuracaoTextoChanged(string value)
+    {
+        if (ValidationHelper.ValidarDuracaoServico(value, out var mins, out _))
+        {
+            _duracaoMinutos = mins;
+        }
+        else if (int.TryParse(ValidationHelper.LimparApenasDigitos(value), out var minsNum) && minsNum > 0)
+        {
+            _duracaoMinutos = minsNum;
+        }
+        OnChanged?.Invoke();
     }
 
     [ObservableProperty]
@@ -907,6 +986,8 @@ public partial class ComandaItemFormViewModel : ObservableObject
 
     [ObservableProperty]
     private string _subtotalTexto = "R$ 0,00";
+
+    public Action? OnChanged { get; set; }
 
     public void RecalcularSubtotal()
     {
@@ -939,11 +1020,11 @@ public class ItemDisponivelOption
     public string DisplayText { get; set; } = string.Empty;
 
     public string PrecoFormatado => Preco.ToString("C2", PtBrCulture);
-    public string TipoTexto => Tipo == TipoItemComanda.Servico ? "Serviço" : "Produto";
+    public string TipoTexto => Tipo == TipoItemComanda.Servico ? "Servi├ºo" : "Produto";
     public string DuracaoTexto => DuracaoMinutos > 0 ? ValidationHelper.FormatarDuracao(DuracaoMinutos) : string.Empty;
     public string SubtituloTexto => Tipo == TipoItemComanda.Servico 
         ? (DuracaoMinutos > 0 ? ValidationHelper.FormatarDuracao(DuracaoMinutos) : "Atendimento")
-        : "Produto cosmético";
+        : "Produto cosm├⌐tico";
     public bool TemDuracao => DuracaoMinutos > 0;
     public bool IsServico => Tipo == TipoItemComanda.Servico;
 }

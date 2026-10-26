@@ -734,8 +734,8 @@
             <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalEdicao_MouseLeftButtonDown"/>
             <Border Background="White" 
                     CornerRadius="14" 
-                    Width="560" 
-                    Height="660"
+                    Width="580" 
+                    Height="715"
                     Padding="26,20" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
@@ -773,8 +773,8 @@
                         </Button>
                     </Grid>
 
-                    <!-- Conteúdo com Layout Fixo e Estável -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+                    <!-- Conteúdo com Layout Fixo e Estável (SEM SCROLL EXTERNO) -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
                         <StackPanel>
                             <!-- Banner Informativo se for Visualização -->
                             <Border Visibility="{Binding IsVisualizacao, Converter={StaticResource BoolToVis}}"
@@ -788,13 +788,240 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Seleção do Cliente -->
+                            <!-- Seleção do Cliente Pesquisável (Estilo Agenda) -->
                             <TextBlock Text="Cliente" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
-                            <ComboBox ItemsSource="{Binding ClientesDisponiveis}" 
-                                      DisplayMemberPath="Nome" 
-                                      SelectedItem="{Binding FormClienteSelecionado}"
-                                      IsEnabled="{Binding PodeEditar}"
-                                      Margin="0,0,0,12"/>
+
+                            <Grid x:Name="ContainerInputCliente" Margin="0,0,0,10">
+                                <!-- O INPUT ÚNICO: Campo clicável e digitável aumentado (Height="52") -->
+                                <Border x:Name="BorderInputCliente"
+                                        Background="White"
+                                        BorderBrush="{StaticResource BrushBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Height="52"
+                                        Padding="12,4"
+                                        Cursor="IBeam"
+                                        IsEnabled="{Binding PodeEditar}"
+                                        PreviewMouseLeftButtonDown="BorderInputCliente_PreviewMouseLeftButtonDown">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Ícone do Cliente -->
+                                        <Border Grid.Column="0"
+                                                Width="32"
+                                                Height="32"
+                                                CornerRadius="16"
+                                                Background="#F4ECE8"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,10,0">
+                                            <ui:SymbolIcon Symbol="Person24" FontSize="15" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+
+                                        <!-- Conteúdo Central: Nome em cima e Telefone embaixo se selecionado, ou digitação de busca -->
+                                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBox x:Name="TxtBuscaCliente"
+                                                         Text="{Binding BuscaClienteTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontSize="13"
+                                                         FontWeight="SemiBold"
+                                                         Foreground="{StaticResource BrushTextPrimary}"
+                                                         Background="Transparent"
+                                                         BorderThickness="0"
+                                                         Padding="0"
+                                                         Margin="0"
+                                                         IsEnabled="{Binding PodeEditar}"
+                                                         VerticalContentAlignment="Center"
+                                                         GotFocus="TxtBuscaCliente_GotFocus"
+                                                         PreviewKeyDown="TxtBuscaCliente_PreviewKeyDown"/>
+
+                                                <!-- Linha inferior quando cliente está selecionado: Telefone em tamanho menor -->
+                                                <TextBlock Text="{Binding FormClienteSelecionado.Telefone, StringFormat='Tel: {0}'}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource BrushTextSecondary}"
+                                                           Margin="0,2,0,0">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding FormClienteSelecionado}" Value="{x:Null}"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                </MultiDataTrigger>
+                                                                <DataTrigger Binding="{Binding FormClienteSelecionado.Telefone}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding FormClienteSelecionado.Telefone}" Value="">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <!-- Placeholder quando o campo de busca está vazio -->
+                                            <TextBlock Text="Clique para selecionar ou digite para pesquisar..."
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource BrushTextSecondary}"
+                                                       VerticalAlignment="Center"
+                                                       Padding="0"
+                                                       Margin="0"
+                                                       IsHitTestVisible="False">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding BuscaClienteTexto}" Value=""/>
+                                                                    <Condition Binding="{Binding IsKeyboardFocused, ElementName=TxtBuscaCliente}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+
+                                        <!-- Botão de Seta para Abrir/Fechar a Lista -->
+                                        <ToggleButton x:Name="BtnToggleClientePopup"
+                                                      Grid.Column="2"
+                                                      IsChecked="{Binding IsClientePopupOpen, Mode=TwoWay}"
+                                                      IsEnabled="{Binding PodeEditar}"
+                                                      Background="Transparent"
+                                                      BorderThickness="0"
+                                                      Padding="6,0"
+                                                      Cursor="Hand"
+                                                      Focusable="False">
+                                            <ToggleButton.Template>
+                                                <ControlTemplate TargetType="ToggleButton">
+                                                    <Border Background="Transparent">
+                                                        <ui:SymbolIcon Symbol="ChevronDown24" FontSize="12" Foreground="{StaticResource BrushTextSecondary}"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </ToggleButton.Template>
+                                        </ToggleButton>
+                                    </Grid>
+                                </Border>
+
+                                <!-- POPUP DO DROPDOWN DE CLIENTES -->
+                                <Popup x:Name="PopupClientes"
+                                       PlacementTarget="{Binding ElementName=BorderInputCliente}"
+                                       Placement="Bottom"
+                                       IsOpen="{Binding IsClientePopupOpen, Mode=TwoWay}"
+                                       StaysOpen="False"
+                                       AllowsTransparency="True"
+                                       PopupAnimation="Fade"
+                                       VerticalOffset="4"
+                                       Width="{Binding ActualWidth, ElementName=BorderInputCliente}">
+                                    <Border Background="White"
+                                            BorderBrush="{StaticResource BrushBorder}"
+                                            BorderThickness="1"
+                                            CornerRadius="8"
+                                            Margin="0,4,0,10"
+                                            MaxHeight="260"
+                                            SnapsToDevicePixels="True">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" Direction="270" ShadowDepth="4" Opacity="0.16" Color="#201C1B"/>
+                                        </Border.Effect>
+
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <StackPanel>
+                                                <ItemsControl ItemsSource="{Binding ClientesDisponiveisFiltrados}" HorizontalContentAlignment="Stretch">
+                                                    <ItemsControl.ItemContainerStyle>
+                                                        <Style TargetType="FrameworkElement">
+                                                            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                                        </Style>
+                                                    </ItemsControl.ItemContainerStyle>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding DataContext.SelecionarClienteOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                    CommandParameter="{Binding}"
+                                                                    Background="Transparent"
+                                                                    BorderThickness="0"
+                                                                    HorizontalAlignment="Stretch"
+                                                                    HorizontalContentAlignment="Stretch"
+                                                                    Height="54"
+                                                                    Padding="12,0"
+                                                                    Cursor="Hand">
+                                                                <Button.Template>
+                                                                    <ControlTemplate TargetType="Button">
+                                                                        <Border x:Name="CliBorder" 
+                                                                                Background="#00FAF4F2" 
+                                                                                Padding="{TemplateBinding Padding}" 
+                                                                                HorizontalAlignment="Stretch"
+                                                                                VerticalAlignment="Stretch">
+                                                                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                                                        </Border>
+                                                                        <ControlTemplate.Triggers>
+                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                <Setter TargetName="CliBorder" Property="Background" Value="#FAF4F2"/>
+                                                                            </Trigger>
+                                                                        </ControlTemplate.Triggers>
+                                                                    </ControlTemplate>
+                                                                </Button.Template>
+                                                                <Grid HorizontalAlignment="Stretch">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <Border Grid.Column="0" 
+                                                                            Width="32" 
+                                                                            Height="32" 
+                                                                            CornerRadius="16" 
+                                                                            Background="#F4ECE8" 
+                                                                            Margin="0,0,10,0" 
+                                                                            VerticalAlignment="Center">
+                                                                        <ui:SymbolIcon Symbol="Person24" FontSize="15" Foreground="{StaticResource BrushPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Border>
+
+                                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                        <TextBlock Text="{Binding NomeExibicao}" 
+                                                                                   FontSize="13" 
+                                                                                   FontWeight="SemiBold" 
+                                                                                   Foreground="{StaticResource BrushTextPrimary}" 
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                        <TextBlock Text="{Binding Telefone}" 
+                                                                                   FontSize="11" 
+                                                                                   Foreground="{StaticResource BrushTextSecondary}" 
+                                                                                   Margin="0,2,0,0" 
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                    </StackPanel>
+                                                                </Grid>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <!-- Mensagem quando não houver resultado na busca -->
+                                                <TextBlock Text="Nenhum cliente encontrado."
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource BrushTextSecondary}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,14">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ClientesDisponiveisFiltrados.Count}" Value="0">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
 
                             <!-- Adicionar Serviço ou Produto (Apenas em Edição/Criação) - INPUT ÚNICO UNIFICADO -->
                             <StackPanel Visibility="{Binding PodeEditar, Converter={StaticResource BoolToVis}}" Margin="0,0,0,12">
@@ -1082,8 +1309,9 @@
                                                         <Grid>
                                                             <Grid.ColumnDefinitions>
                                                                 <ColumnDefinition Width="*"/>    <!-- Nome e Detalhe -->
+                                                                <ColumnDefinition Width="Auto"/> <!-- Horário (HH:mm) para Serviços -->
                                                                 <ColumnDefinition Width="Auto"/> <!-- Quantidade -->
-                                                                <ColumnDefinition Width="110"/>  <!-- Preço Editável -->
+                                                                <ColumnDefinition Width="105"/>  <!-- Preço Editável -->
                                                                 <ColumnDefinition Width="Auto"/> <!-- Excluir Item -->
                                                             </Grid.ColumnDefinitions>
 
@@ -1093,29 +1321,54 @@
                                                                 <TextBlock Text="{Binding Detalhe}" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" Margin="0,2,0,0"/>
                                                             </StackPanel>
 
-                                                            <!-- Controle de Quantidade (- Qtd +) -->
-                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
-                                                                <Button Command="{Binding DataContext.DiminuirQtdCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                        CommandParameter="{Binding}"
-                                                                        IsEnabled="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                        Background="#EFEAE7" BorderThickness="0" Width="24" Height="24" Padding="0" Cursor="Hand">
-                                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                                    <TextBlock Text="-" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                                </Button>
-
-                                                                <TextBlock Text="{Binding Quantidade}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0"/>
-
-                                                                <Button Command="{Binding DataContext.AumentarQtdCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                        CommandParameter="{Binding}"
-                                                                        IsEnabled="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                        Background="#EFEAE7" BorderThickness="0" Width="24" Height="24" Padding="0" Cursor="Hand">
-                                                                    <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
-                                                                    <TextBlock Text="+" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                                </Button>
+                                                            <!-- Horário / Duração Editável para Serviços (HH:mm) -->
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                                        Visibility="{Binding IsServico, Converter={StaticResource BoolToVis}}">
+                                                                <ui:SymbolIcon Symbol="Clock24" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                                <TextBox Style="{StaticResource ModalTextBoxStyle}"
+                                                                         helpers:MaskHelper.Mask="Time"
+                                                                         Text="{Binding DuracaoTexto, UpdateSourceTrigger=PropertyChanged}"
+                                                                         IsEnabled="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                         MaxLength="5"
+                                                                         Width="56"
+                                                                         Height="32"
+                                                                         Padding="4,2"
+                                                                         FontSize="12"
+                                                                         HorizontalContentAlignment="Center"
+                                                                         ToolTip="Horário / Tempo estimado (HH:mm)"/>
                                                             </StackPanel>
 
+                                                            <!-- Controle de Quantidade: (- Qtd +) se PodeEditar; Badge (1x, 2x) se visualização -->
+                                                            <Grid Grid.Column="2" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                                <!-- Modo Edição: Botões - e + -->
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                                                            Visibility="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                                                                    <Button Command="{Binding DataContext.DiminuirQtdCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                            CommandParameter="{Binding}"
+                                                                            Background="#EFEAE7" BorderThickness="0" Width="24" Height="24" Padding="0" Cursor="Hand">
+                                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                                        <TextBlock Text="-" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Button>
+
+                                                                    <TextBlock Text="{Binding Quantidade}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="8,0"/>
+
+                                                                    <Button Command="{Binding DataContext.AumentarQtdCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                            CommandParameter="{Binding}"
+                                                                            Background="#EFEAE7" BorderThickness="0" Width="24" Height="24" Padding="0" Cursor="Hand">
+                                                                        <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="4"/></Style></Button.Resources>
+                                                                        <TextBlock Text="+" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Button>
+                                                                </StackPanel>
+
+                                                                <!-- Modo Visualização (Comanda Paga): Apenas '1x', '2x', etc. sem botões -->
+                                                                <Border Background="#F5F0ED" CornerRadius="6" Padding="8,4" VerticalAlignment="Center"
+                                                                        Visibility="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBooleanConverter}}">
+                                                                    <TextBlock Text="{Binding QuantidadeTextoExibicao}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextPrimary}"/>
+                                                                </Border>
+                                                            </Grid>
+
                                                             <!-- Campo de Preço com Máscara Monetária em Tempo Real -->
-                                                            <Grid Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                            <Grid Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0">
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="Auto"/>
                                                                     <ColumnDefinition Width="*"/>
@@ -1132,7 +1385,7 @@
                                                             </Grid>
 
                                                             <!-- Botão Excluir Item -->
-                                                            <Button Grid.Column="3"
+                                                            <Button Grid.Column="4"
                                                                     Command="{Binding DataContext.RemoverItemDoFormularioCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                     CommandParameter="{Binding}"
                                                                     Visibility="{Binding DataContext.PodeEditar, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"
@@ -1198,15 +1451,16 @@
                             </Border>
 
                             <!-- Campo de Observação -->
-                            <TextBlock Text="Observação" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
+                            <TextBlock Text="Observação" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,4"/>
                             <TextBox Style="{StaticResource ModalTextBoxStyle}" 
                                      Text="{Binding FormObservacao, UpdateSourceTrigger=PropertyChanged}" 
                                      IsEnabled="{Binding PodeEditar}"
                                      AcceptsReturn="True"
                                      TextWrapping="Wrap"
-                                     Height="65"
+                                     Height="50"
                                      VerticalContentAlignment="Top"
-                                     MaxLength="300"/>
+                                     MaxLength="300"
+                                     Margin="0,0,0,4"/>
                         </StackPanel>
                     </ScrollViewer>
 
