@@ -14,6 +14,17 @@ public partial class MainWindow : FluentWindow
     public MainWindow()
     {
         InitializeComponent();
+
+        try
+        {
+            var iconUri = new Uri("pack://application:,,,/Resources/app.ico", UriKind.Absolute);
+            Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[MainWindow] Erro ao carregar app.ico: {ex.Message}");
+        }
+
         var vm = App.Services.GetRequiredService<MainViewModel>();
         DataContext = vm;
         vm.Inicializar();

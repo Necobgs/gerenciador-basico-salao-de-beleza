@@ -219,7 +219,7 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                 {
                     agendamentoSnapshot.Id,
                     agendamentoSnapshot.ClienteId,
-                    NomeCliente = agendamentoSnapshot.Cliente != null ? agendamentoSnapshot.Cliente.NomeExibicao : "Cliente",
+                    NomeCliente = agendamentoSnapshot.Cliente != null ? agendamentoSnapshot.Cliente.NomeExibicao : (!string.IsNullOrWhiteSpace(agendamentoSnapshot.ClienteNaoEncontradoNome) ? agendamentoSnapshot.ClienteNaoEncontradoNome : "Cliente"),
                     TelefoneCliente = agendamentoSnapshot.Cliente?.Telefone,
                     agendamentoSnapshot.DataHora,
                     agendamentoSnapshot.TempoTotalPrevistoMinutos,
@@ -396,20 +396,50 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                 .OrderBy(o => o.CriadoEm)
                 .ToListAsync(cancellationToken);
 
-            var localPorUid = agendamentosLocais
+            // Dicionários com proteção contra chaves duplicadas (defesa em profundidade):
+            // 1. Agendamentos locais: agrupa por UID para prevenir duplicações legadas
+            var localPorUid = new Dictionary<string, Agendamento>(StringComparer.OrdinalIgnoreCase);
+            var gruposLocais = agendamentosLocais
                 .Where(a => !string.IsNullOrEmpty(a.ICloudEventId))
-                .ToDictionary(a => a.ICloudEventId!, a => a, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(a => a.ICloudEventId!, StringComparer.OrdinalIgnoreCase);
 
-            var pendingPorUid = operacoesPendentes
-                .Where(o => !string.IsNullOrEmpty(o.ICloudEventId))
-                .ToDictionary(o => o.ICloudEventId!, o => o, StringComparer.OrdinalIgnoreCase);
+            foreach (var grupo in gruposLocais)
+            {
+                var principal = grupo
+                    .OrderByDescending(a => a.Status != StatusAgendamento.Cancelado)
+                    .ThenByDescending(a => a.VersaoLocal)
+                    .First();
 
-            var remotoPorUid = eventosRemotos
-                .ToDictionary(e => e.Uid, e => e, StringComparer.OrdinalIgnoreCase);
+                localPorUid[grupo.Key] = principal;
+
+                // Se existirem duplicatas com o mesmo UID no banco local, anula o ICloudEventId dos duplicados
+                foreach (var duplicado in grupo.Where(a => a.Id != principal.Id))
+                {
+                    duplicado.ICloudEventId = null;
+                    duplicado.SincronizadoComICloud = false;
+                }
+            }
+
+            // 2. Operações pendentes: indexador seguro (substitui sem lançar exceção de chave duplicada)
+            var pendingPorUid = new Dictionary<string, OperacaoSincronizacao>(StringComparer.OrdinalIgnoreCase);
+            foreach (var op in operacoesPendentes.Where(o => !string.IsNullOrEmpty(o.ICloudEventId)))
+            {
+                pendingPorUid[op.ICloudEventId!] = op;
+            }
+
+            // 3. Eventos remotos do iCloud: indexador seguro prevenindo duplicatas do CalDAV
+            var remotoPorUid = new Dictionary<string, ICloudEventoRemoto>(StringComparer.OrdinalIgnoreCase);
+            foreach (var ev in eventosRemotos.Where(e => !string.IsNullOrEmpty(e.Uid)))
+            {
+                if (!remotoPorUid.TryGetValue(ev.Uid, out var existente) || (ev.UltimaModificacao ?? DateTime.MinValue) >= (existente.UltimaModificacao ?? DateTime.MinValue))
+                {
+                    remotoPorUid[ev.Uid] = ev;
+                }
+            }
 
             // PASSO 5: Identificar conflitos antes de enviar alterações
             // PASSO 6: Resolver automaticamente apenas os casos sem ambiguidade
-            foreach (var remoto in eventosRemotos)
+            foreach (var remoto in remotoPorUid.Values)
             {
                 bool temLocal = localPorUid.TryGetValue(remoto.Uid, out var local);
                 bool temPendente = pendingPorUid.TryGetValue(remoto.Uid, out var pendente);
@@ -424,7 +454,7 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                     if (remotoMudou || remotoCancelou || localCancelou)
                     {
                         bool datasIguais = Math.Abs((local!.DataHora - remoto.DataHoraInicio).TotalMinutes) < 1;
-                        bool titulosIguais = string.Equals(local.Cliente?.NomeExibicao, remoto.NomeCliente ?? remoto.Titulo, StringComparison.OrdinalIgnoreCase);
+                        bool titulosIguais = string.Equals(local.Cliente?.NomeExibicao ?? local.ClienteNaoEncontradoNome, remoto.NomeCliente ?? remoto.Titulo, StringComparison.OrdinalIgnoreCase);
                         bool statusIguais = (remoto.IsCancelado && local.Status == StatusAgendamento.Cancelado) ||
                                             (!remoto.IsCancelado && local.Status != StatusAgendamento.Cancelado);
 
@@ -495,8 +525,12 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                 else if (!temLocal && !temPendente && !remoto.IsCancelado)
                 {
                     // Novo evento criado no iPhone durante período offline: importar para o SQLite
-                    await ImportarNovoEventoRemotoAsync(context, remoto);
+                    var importado = await ImportarNovoEventoRemotoAsync(context, remoto);
                     resultado.EventosImportados++;
+                    if (importado != null && !string.IsNullOrEmpty(importado.ICloudEventId))
+                    {
+                        localPorUid[importado.ICloudEventId] = importado;
+                    }
                 }
             }
 
@@ -535,7 +569,7 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                         await RegistrarConflitoAsync(context, local, pendente, new ICloudEventoRemoto
                         {
                             Uid = local.ICloudEventId!,
-                            Titulo = local.Cliente?.NomeExibicao ?? "Agendamento",
+                            Titulo = local.Cliente?.NomeExibicao ?? local.ClienteNaoEncontradoNome ?? "Agendamento",
                             DataHoraInicio = local.DataHora,
                             DataHoraFim = local.DataHora.AddMinutes(local.TempoTotalPrevistoMinutos),
                             IsCancelado = true
@@ -782,7 +816,9 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
 
         if (agendamento != null)
         {
-            var clienteNome = agendamento.Cliente != null ? agendamento.Cliente.NomeExibicao : "Cliente";
+            var clienteNome = agendamento.Cliente != null 
+                ? agendamento.Cliente.NomeExibicao 
+                : (!string.IsNullOrWhiteSpace(agendamento.ClienteNaoEncontradoNome) ? agendamento.ClienteNaoEncontradoNome : "Cliente");
             titulo = $"Salão - {clienteNome}";
             inicio = agendamento.DataHora;
             var duracao = agendamento.TempoTotalPrevistoMinutos > 0 ? agendamento.TempoTotalPrevistoMinutos : 30;
@@ -803,6 +839,10 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
                     if (s.Servico != null)
                         sb.AppendLine($"- {s.Servico.NomeExibicao}");
                 }
+            }
+            else if (!string.IsNullOrWhiteSpace(agendamento.ServicoNaoEncontradoNome))
+            {
+                sb.AppendLine($"Serviço: {agendamento.ServicoNaoEncontradoNome}");
             }
 
             descricao = sb.ToString();
@@ -835,51 +875,206 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
         };
     }
 
-    private static async Task ImportarNovoEventoRemotoAsync(AppDbContext context, ICloudEventoRemoto remoto)
+    private static void ExtrairClienteEServicosDoEventoRemoto(
+        ICloudEventoRemoto remoto,
+        List<Servico> todosServicos,
+        out string nomeCliente,
+        out List<string> servicoNomes)
     {
-        var titulo = (remoto.Titulo ?? string.Empty).Trim();
-        string nomeCliente = titulo;
-        if (titulo.StartsWith("Salão - ", StringComparison.OrdinalIgnoreCase))
-            nomeCliente = titulo.Substring("Salão - ".Length).Trim();
-        else if (titulo.StartsWith("Salao - ", StringComparison.OrdinalIgnoreCase))
-            nomeCliente = titulo.Substring("Salao - ".Length).Trim();
+        servicoNomes = new List<string>();
+
+        var rawTitulo = (remoto.Titulo ?? string.Empty).Trim();
+        var cleanTitulo = rawTitulo;
+        string[] prefixos = { "Salão - ", "Salao - ", "Salão: ", "Salao: ", "Salão / ", "Salao / ", "Salão ", "Salao " };
+        foreach (var p in prefixos)
+        {
+            if (cleanTitulo.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+            {
+                cleanTitulo = cleanTitulo.Substring(p.Length).Trim();
+                break;
+            }
+        }
+
+        string? clienteDaDescricao = null;
+        if (!string.IsNullOrWhiteSpace(remoto.Descricao))
+        {
+            var matchCliente = System.Text.RegularExpressions.Regex.Match(
+                remoto.Descricao, 
+                @"^\s*Cliente:\s*(.+)$", 
+                System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (matchCliente.Success)
+            {
+                clienteDaDescricao = matchCliente.Groups[1].Value.Trim();
+            }
+
+            var linhas = remoto.Descricao.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            bool noBlocoServicos = false;
+            foreach (var linha in linhas)
+            {
+                if (System.Text.RegularExpressions.Regex.IsMatch(linha, @"^Servi[çc]os?:", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                {
+                    noBlocoServicos = true;
+                    var inline = System.Text.RegularExpressions.Regex.Replace(linha, @"^Servi[çc]os?:\s*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                    if (!string.IsNullOrEmpty(inline))
+                    {
+                        servicoNomes.Add(inline);
+                    }
+                    continue;
+                }
+
+                if (noBlocoServicos)
+                {
+                    if (System.Text.RegularExpressions.Regex.IsMatch(linha, @"^[A-Za-zÀ-ÿ]+:", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    {
+                        noBlocoServicos = false;
+                    }
+                    else
+                    {
+                        var s = linha.TrimStart('-', '*', '•', ' ').Trim();
+                        if (!string.IsNullOrEmpty(s))
+                        {
+                            servicoNomes.Add(s);
+                        }
+                    }
+                }
+            }
+        }
+
+        string clienteDoTitulo = cleanTitulo;
+        string? servicoDoTitulo = null;
+
+        if (cleanTitulo.Contains(" - "))
+        {
+            var partes = cleanTitulo.Split(new[] { " - " }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (partes.Length >= 2)
+            {
+                bool parte0EhServico = todosServicos.Any(s => 
+                    string.Equals(s.Descricao?.Trim(), partes[0], StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.NomeExibicao?.Trim(), partes[0], StringComparison.OrdinalIgnoreCase));
+
+                bool parte1EhServico = todosServicos.Any(s => 
+                    string.Equals(s.Descricao?.Trim(), partes[1], StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.NomeExibicao?.Trim(), partes[1], StringComparison.OrdinalIgnoreCase));
+
+                if (parte0EhServico && !parte1EhServico)
+                {
+                    servicoDoTitulo = partes[0];
+                    clienteDoTitulo = partes[1];
+                }
+                else
+                {
+                    clienteDoTitulo = partes[0];
+                    servicoDoTitulo = partes[1];
+                }
+            }
+        }
+        else if (cleanTitulo.Contains('(') && cleanTitulo.EndsWith(')'))
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(cleanTitulo, @"^(.*?)\s*\((.*?)\)$");
+            if (m.Success)
+            {
+                clienteDoTitulo = m.Groups[1].Value.Trim();
+                servicoDoTitulo = m.Groups[2].Value.Trim();
+            }
+        }
+        else if (cleanTitulo.Contains(" / "))
+        {
+            var partes = cleanTitulo.Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (partes.Length >= 2)
+            {
+                clienteDoTitulo = partes[0];
+                servicoDoTitulo = partes[1];
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(servicoDoTitulo) && servicoNomes.Count == 0)
+        {
+            servicoNomes.Add(servicoDoTitulo);
+        }
+
+        nomeCliente = !string.IsNullOrWhiteSpace(clienteDaDescricao) 
+            ? clienteDaDescricao 
+            : (!string.IsNullOrWhiteSpace(remoto.NomeCliente) ? remoto.NomeCliente.Trim() : clienteDoTitulo);
 
         if (string.IsNullOrWhiteSpace(nomeCliente))
+        {
             nomeCliente = "Cliente iPhone";
+        }
+    }
 
-        var cliente = await context.Clientes
-            .FirstOrDefaultAsync(c => c.Nome.ToLower() == nomeCliente.ToLower());
+    private static async Task<Agendamento> ImportarNovoEventoRemotoAsync(AppDbContext context, ICloudEventoRemoto remoto)
+    {
+        var todosClientes = await context.Clientes.ToListAsync();
+        var todosServicos = await context.Servicos.Where(s => s.Ativo).ToListAsync();
 
+        ExtrairClienteEServicosDoEventoRemoto(remoto, todosServicos, out var nomeCliente, out var servicoNomes);
+
+        // Busca de Cliente: estritamente CASE-INSENSITIVE
+        var cliente = todosClientes.FirstOrDefault(c =>
+            string.Equals(c.Nome?.Trim(), nomeCliente, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrEmpty(c.Apelido) && string.Equals(c.Apelido.Trim(), nomeCliente, StringComparison.OrdinalIgnoreCase)) ||
+            string.Equals(c.NomeExibicao.Trim(), nomeCliente, StringComparison.OrdinalIgnoreCase)
+        );
+
+        string? clienteNaoEncontradoNome = null;
         if (cliente == null)
         {
-            cliente = new Cliente
-            {
-                Nome = nomeCliente,
-                Observacao = "Importado via Calendário do iPhone",
-                DataCadastro = DateTime.Now
-            };
-            context.Clientes.Add(cliente);
-            await context.SaveChangesAsync();
+            // REGRA: Quando não encontrar cliente, NÃO PODE CADASTRAR.
+            // Registra um rótulo com o nome do cliente e aviso de não encontrado.
+            clienteNaoEncontradoNome = nomeCliente;
         }
 
-        var servico = await context.Servicos.FirstOrDefaultAsync();
-        if (servico == null)
+        // Busca de Serviços: estritamente CASE-INSENSITIVE
+        var servicosIdentificados = new List<Servico>();
+        var servicosNaoEncontrados = new List<string>();
+
+        if (servicoNomes.Count == 0)
         {
-            servico = new Servico
-            {
-                Descricao = "Atendimento Geral",
-                Valor = 0m,
-                DuracaoMinutos = remoto.DuracaoMinutos,
-                Ativo = true
-            };
-            context.Servicos.Add(servico);
-            await context.SaveChangesAsync();
+            servicosNaoEncontrados.Add("Serviço não informado");
         }
+        else
+        {
+            foreach (var nomeBusca in servicoNomes)
+            {
+                var sEncontrado = todosServicos.FirstOrDefault(s =>
+                    string.Equals(s.Descricao?.Trim(), nomeBusca, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.NomeExibicao?.Trim(), nomeBusca, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals($"{s.Descricao} {s.Especificacao}".Trim(), nomeBusca, StringComparison.OrdinalIgnoreCase)
+                );
+
+                if (sEncontrado == null)
+                {
+                    sEncontrado = todosServicos.FirstOrDefault(s =>
+                        s.Descricao.Equals(nomeBusca, StringComparison.OrdinalIgnoreCase) ||
+                        nomeBusca.Contains(s.Descricao, StringComparison.OrdinalIgnoreCase) ||
+                        s.Descricao.Contains(nomeBusca, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (sEncontrado != null)
+                {
+                    if (!servicosIdentificados.Contains(sEncontrado))
+                        servicosIdentificados.Add(sEncontrado);
+                }
+                else
+                {
+                    // REGRA: Quando não encontrar serviço, NÃO PODE CADASTRAR.
+                    // Avisar que não encontrou!
+                    servicosNaoEncontrados.Add(nomeBusca);
+                }
+            }
+        }
+
+        string? servicoNaoEncontradoNome = servicosNaoEncontrados.Count > 0
+            ? string.Join(", ", servicosNaoEncontrados)
+            : null;
 
         var novoAgendamento = new Agendamento
         {
-            ClienteId = cliente.Id,
+            ClienteId = cliente?.Id,
             Cliente = cliente,
+            ClienteNaoEncontradoNome = clienteNaoEncontradoNome,
+            ServicoNaoEncontradoNome = servicoNaoEncontradoNome,
             DataHora = remoto.DataHoraInicio,
             TempoTotalPrevistoMinutos = remoto.DuracaoMinutos,
             Status = StatusAgendamento.Pendente,
@@ -892,37 +1087,47 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
             VersaoLocal = 1
         };
 
-        novoAgendamento.AgendamentoServicos.Add(new AgendamentoServico
+        foreach (var s in servicosIdentificados)
         {
-            Agendamento = novoAgendamento,
-            ServicoId = servico.Id,
-            Servico = servico
-        });
+            novoAgendamento.AgendamentoServicos.Add(new AgendamentoServico
+            {
+                Agendamento = novoAgendamento,
+                ServicoId = s.Id,
+                Servico = s
+            });
+        }
 
-        var novaComanda = new Comanda
+        if (cliente != null)
         {
-            ClienteId = cliente.Id,
-            DataAbertura = remoto.DataHoraInicio,
-            Status = StatusComanda.Aberta,
-            Observacao = remoto.Descricao?.Trim(),
-            Agendamento = novoAgendamento
-        };
+            var novaComanda = new Comanda
+            {
+                ClienteId = cliente.Id,
+                DataAbertura = remoto.DataHoraInicio,
+                Status = StatusComanda.Aberta,
+                Observacao = remoto.Descricao?.Trim(),
+                Agendamento = novoAgendamento
+            };
 
-        novaComanda.Itens.Add(new ComandaItem
-        {
-            Comanda = novaComanda,
-            Tipo = TipoItemComanda.Servico,
-            ServicoId = servico.Id,
-            Descricao = servico.NomeExibicao,
-            Quantidade = 1,
-            ValorUnitario = servico.Valor
-        });
+            foreach (var s in servicosIdentificados)
+            {
+                novaComanda.Itens.Add(new ComandaItem
+                {
+                    Comanda = novaComanda,
+                    Tipo = TipoItemComanda.Servico,
+                    ServicoId = s.Id,
+                    Descricao = s.NomeExibicao,
+                    Quantidade = 1,
+                    ValorUnitario = s.Valor
+                });
+            }
 
-        novaComanda.ValorTotal = novaComanda.CalcularTotalItens();
-        novoAgendamento.Comanda = novaComanda;
+            novaComanda.ValorTotal = novaComanda.CalcularTotalItens();
+            novoAgendamento.Comanda = novaComanda;
+            context.Comandas.Add(novaComanda);
+        }
 
         context.Agendamentos.Add(novoAgendamento);
-        context.Comandas.Add(novaComanda);
+    return novoAgendamento;
     }
 
     private static async Task RegistrarConflitoAsync(AppDbContext context, Agendamento local, OperacaoSincronizacao op, ICloudEventoRemoto remoto)
@@ -931,12 +1136,12 @@ public class ICloudSyncService : IICloudSyncService, IDisposable
         {
             AgendamentoId = local.Id,
             ICloudEventId = remoto.Uid,
-            Titulo = $"Conflito em '{local.Cliente?.NomeExibicao ?? "Agendamento"}'",
+            Titulo = $"Conflito em '{local.Cliente?.NomeExibicao ?? local.ClienteNaoEncontradoNome ?? "Agendamento"}'",
             Descricao = $"O evento foi modificado no Salão para {local.DataHora:dd/MM/yyyy HH:mm} e simultaneamente no iPhone para {remoto.DataHoraInicio:dd/MM/yyyy HH:mm}.",
             DadosLocaisJson = JsonSerializer.Serialize(new
             {
                 local.Id,
-                NomeCliente = local.Cliente?.NomeExibicao,
+                NomeCliente = local.Cliente?.NomeExibicao ?? local.ClienteNaoEncontradoNome,
                 local.DataHora,
                 local.TempoTotalPrevistoMinutos,
                 local.Observacao,

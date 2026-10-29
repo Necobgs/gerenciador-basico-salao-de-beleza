@@ -94,10 +94,13 @@ public class AppDbContext : DbContext
             entity.Property(a => a.ICloudEventId).HasMaxLength(255);
             entity.Property(a => a.ICloudETag).HasMaxLength(255);
             entity.Property(a => a.ICloudUrl).HasMaxLength(500);
+            entity.Property(a => a.ClienteNaoEncontradoNome).HasMaxLength(150);
+            entity.Property(a => a.ServicoNaoEncontradoNome).HasMaxLength(150);
 
             entity.HasOne(a => a.Cliente)
                   .WithMany(c => c.Agendamentos)
                   .HasForeignKey(a => a.ClienteId)
+                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.Restrict);
         });
 

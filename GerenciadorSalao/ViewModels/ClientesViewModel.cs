@@ -79,6 +79,27 @@ public partial class ClientesViewModel : ObservableObject, IModalHost
     [ObservableProperty]
     private int _totalClientes;
 
+    private readonly List<ClienteTableItem> _todosClientesFiltrados = new();
+    private const int ItensPorPagina = 20;
+
+    [ObservableProperty]
+    private int _paginaAtual = 1;
+
+    [ObservableProperty]
+    private int _totalPaginas = 1;
+
+    [ObservableProperty]
+    private string _textoPaginacao = string.Empty;
+
+    [ObservableProperty]
+    private bool _podeVoltarPagina;
+
+    [ObservableProperty]
+    private bool _podeAvancarPagina;
+
+    [ObservableProperty]
+    private bool _temPaginacao;
+
     [ObservableProperty]
     private bool _carregando;
 
@@ -210,14 +231,66 @@ public partial class ClientesViewModel : ObservableObject, IModalHost
                 });
             }
 
-            Clientes = itens;
-            TotalClientes = itens.Count;
-            OnPropertyChanged(nameof(TemClientes));
-            OnPropertyChanged(nameof(SemClientes));
+            _todosClientesFiltrados.Clear();
+            _todosClientesFiltrados.AddRange(itens);
+            TotalClientes = _todosClientesFiltrados.Count;
+            AtualizarPaginaClientes(resetPagina: true);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[ClientesViewModel] Erro ao filtrar clientes: {ex}");
+        }
+    }
+
+    private void AtualizarPaginaClientes(bool resetPagina = false)
+    {
+        if (resetPagina) PaginaAtual = 1;
+
+        var total = _todosClientesFiltrados.Count;
+        TotalPaginas = total > 0 ? (int)Math.Ceiling((double)total / ItensPorPagina) : 1;
+
+        if (PaginaAtual > TotalPaginas) PaginaAtual = TotalPaginas;
+        if (PaginaAtual < 1) PaginaAtual = 1;
+
+        var skip = (PaginaAtual - 1) * ItensPorPagina;
+        Clientes = _todosClientesFiltrados.Skip(skip).Take(ItensPorPagina).ToList();
+
+        PodeVoltarPagina = PaginaAtual > 1;
+        PodeAvancarPagina = PaginaAtual < TotalPaginas;
+        TemPaginacao = total > 0;
+
+        if (total == 0)
+        {
+            TextoPaginacao = "Nenhum cliente encontrado";
+        }
+        else
+        {
+            var inicio = skip + 1;
+            var fim = Math.Min(skip + ItensPorPagina, total);
+            TextoPaginacao = $"Mostrando {inicio}-{fim} de {total} (Página {PaginaAtual} de {TotalPaginas})";
+        }
+
+        OnPropertyChanged(nameof(TemClientes));
+        OnPropertyChanged(nameof(SemClientes));
+    }
+
+    [RelayCommand]
+    public void ProximaPagina()
+    {
+        if (PodeAvancarPagina)
+        {
+            PaginaAtual++;
+            AtualizarPaginaClientes();
+        }
+    }
+
+    [RelayCommand]
+    public void PaginaAnterior()
+    {
+        if (PodeVoltarPagina)
+        {
+            PaginaAtual--;
+            AtualizarPaginaClientes();
         }
     }
 

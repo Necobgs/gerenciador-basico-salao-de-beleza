@@ -97,7 +97,7 @@
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <Grid Margin="28,20,28,32">
+        <Grid Margin="20,16,20,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- 1. Header da Página -->
                 <RowDefinition Height="Auto"/> <!-- 2. Quatro Cards de Métricas -->
@@ -351,8 +351,12 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="{Binding TituloAtendimentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding TituloAtendimentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                            <Border Grid.Column="1" Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="17" Foreground="#2E7D32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -387,8 +391,12 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="Comandas abertas" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="#FFF3E0" HorizontalAlignment="Right">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Comandas abertas" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                            <Border Grid.Column="1" Width="34" Height="34" CornerRadius="8" Background="#FFF3E0" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="Receipt24" FontSize="17" Foreground="#E65100" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -432,8 +440,12 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="{Binding TituloAgendamentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding TituloAgendamentosDia}" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                            <Border Grid.Column="1" Width="34" Height="34" CornerRadius="8" Background="#E8F5E9" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="CalendarLtr24" FontSize="17" Foreground="#2E7D32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -445,11 +457,11 @@
                                    Foreground="{StaticResource BrushTextPrimary}" 
                                    Margin="0,6,0,8"/>
 
-                        <StackPanel Grid.Row="2" Orientation="Horizontal">
-                            <TextBlock Text="• " FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                            <TextBlock Text="{Binding AgendamentosPendentesHoje}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
-                            <TextBlock Text=" aguardando atendimento" FontSize="11" Foreground="{StaticResource BrushTextSecondary}"/>
-                        </StackPanel>
+                        <TextBlock Grid.Row="2" FontSize="11" Foreground="{StaticResource BrushTextSecondary}" TextTrimming="CharacterEllipsis">
+                            <Run Text="• "/>
+                            <Run Text="{Binding AgendamentosPendentesHoje, Mode=OneWay}" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}"/>
+                            <Run Text=" aguardando atendimento"/>
+                        </TextBlock>
                     </Grid>
                 </Border>
 
@@ -469,8 +481,12 @@
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
-                            <TextBlock Text="Total de clientes" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
-                            <Border Width="34" Height="34" CornerRadius="8" Background="#E1F5FE" HorizontalAlignment="Right">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Total de clientes" FontSize="12" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"/>
+                            <Border Grid.Column="1" Width="34" Height="34" CornerRadius="8" Background="#E1F5FE" HorizontalAlignment="Right">
                                 <ui:SymbolIcon Symbol="People24" FontSize="17" Foreground="#0277BD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -828,17 +844,22 @@
                     </Border>
 
                     <!-- Lista de Agendamentos Reais do Dia -->
-                    <ItemsControl Grid.Row="2" ItemsSource="{Binding AgendaDoDia}" Visibility="{Binding TemAgendamentos, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl Grid.Row="2" 
+                                  ItemsSource="{Binding AgendaDoDia}" 
+                                  Visibility="{Binding TemAgendamentos, Converter={StaticResource BoolToVis}}"
+                                  HorizontalContentAlignment="Stretch">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Button Command="{Binding DataContext.AbrirAtendimentoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         FocusVisualStyle="{x:Null}"
                                         Cursor="Hand"
+                                        HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Stretch"
                                         BorderThickness="0"
                                         Background="Transparent"
-                                        Padding="0">
+                                        Padding="0"
+                                        OverridesDefaultStyle="True">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="RowBorder" 
@@ -846,8 +867,9 @@
                                                     BorderBrush="{StaticResource BrushBorder}" 
                                                     BorderThickness="0,0,0,1" 
                                                     Padding="12,12"
+                                                    HorizontalAlignment="Stretch"
                                                     SnapsToDevicePixels="True">
-                                                <Grid>
+                                                <Grid HorizontalAlignment="Stretch">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="65"/>  <!-- Horário -->
                                                         <ColumnDefinition Width="180"/> <!-- Cliente -->
@@ -866,8 +888,8 @@
                                                                VerticalAlignment="Center"/>
 
                                                     <!-- Cliente (Avatar + Nome) -->
-                                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <Border Width="26" Height="26" CornerRadius="13" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,8,0">
+                                                    <DockPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                        <Border DockPanel.Dock="Left" Width="26" Height="26" CornerRadius="13" Background="{StaticResource BrushSurfaceSubtle}" Margin="0,0,8,0">
                                                             <TextBlock Text="{Binding Iniciais}" 
                                                                        FontSize="10" 
                                                                        FontWeight="Bold" 
@@ -875,8 +897,8 @@
                                                                        HorizontalAlignment="Center" 
                                                                        VerticalAlignment="Center"/>
                                                         </Border>
-                                                        <TextBlock Text="{Binding NomeCliente}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
-                                                    </StackPanel>
+                                                        <TextBlock Text="{Binding NomeCliente}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                    </DockPanel>
 
                                                     <!-- Serviços -->
                                                     <TextBlock Grid.Column="2" 
@@ -884,7 +906,8 @@
                                                                FontSize="12" 
                                                                Foreground="{StaticResource BrushTextSecondary}" 
                                                                VerticalAlignment="Center" 
-                                                               TextTrimming="CharacterEllipsis"/>
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Margin="0,0,12,0"/>
 
                                                     <!-- Duração com Ícone de Relógio -->
                                                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">

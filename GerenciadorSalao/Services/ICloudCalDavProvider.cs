@@ -466,14 +466,14 @@ public class ICloudCalDavProvider : IICloudCalendarProvider, IDisposable
 
     private static List<ICloudEventoRemoto> ExtrairEventosDoMultiStatusXml(string xml, string baseCalendarUrl)
     {
-        var lista = new List<ICloudEventoRemoto>();
+        var dict = new Dictionary<string, ICloudEventoRemoto>(StringComparer.OrdinalIgnoreCase);
         var responses = Regex.Matches(xml, @"<[^>]*response[^>]*>([\s\S]*?)</[^>]*response>", RegexOptions.IgnoreCase);
 
         foreach (Match resp in responses)
         {
             var bloco = resp.Groups[1].Value;
             var href = Regex.Match(bloco, @"<[^>]*href[^>]*>([^<]+)<", RegexOptions.IgnoreCase).Groups[1].Value.Trim();
-            var etag = Regex.Match(bloco, @"<[^>]*getetag[^>]*>([^<]+)<", RegexOptions.IgnoreCase).Groups[1].Value.Trim('\"', ' ');
+            var etag = Regex.Match(bloco, @"<[^>]*getetag[^>]*>([^<]+)<", RegexOptions.IgnoreCase).Groups[1].Value.Trim('"', ' ');
             var ics = Regex.Match(bloco, @"<[^>]*calendar-data[^>]*>([\s\S]*?)</[^>]*calendar-data>", RegexOptions.IgnoreCase).Groups[1].Value;
 
             if (string.IsNullOrWhiteSpace(ics))
@@ -489,13 +489,18 @@ public class ICloudCalDavProvider : IICloudCalendarProvider, IDisposable
             }
 
             var ev = ParsearIcs(ics, uid, etag, href);
-            if (ev != null)
+            if (ev != null && !string.IsNullOrWhiteSpace(ev.Uid))
             {
-                lista.Add(ev);
+                // Se houver mais de uma resposta para o mesmo UID (ex.: componentes de recorrência ou multi-status do iCloud),
+                // mantém o evento mais recente sem duplicar a lista
+                if (!dict.TryGetValue(ev.Uid, out var existente) || (ev.UltimaModificacao ?? DateTime.MinValue) >= (existente.UltimaModificacao ?? DateTime.MinValue))
+                {
+                    dict[ev.Uid] = ev;
+                }
             }
         }
 
-        return lista;
+        return dict.Values.ToList();
     }
 
     private static ICloudEventoRemoto? ParsearIcs(string ics, string fallbackUid, string? etag, string? url)

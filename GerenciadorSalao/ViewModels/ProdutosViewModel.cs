@@ -54,6 +54,27 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
     [ObservableProperty]
     private string _totalProdutosTexto = "0 produtos";
 
+    private readonly List<ProdutoCardItem> _todosProdutosFiltrados = new();
+    private const int ItensPorPagina = 20;
+
+    [ObservableProperty]
+    private int _paginaAtual = 1;
+
+    [ObservableProperty]
+    private int _totalPaginas = 1;
+
+    [ObservableProperty]
+    private string _textoPaginacao = string.Empty;
+
+    [ObservableProperty]
+    private bool _podeVoltarPagina;
+
+    [ObservableProperty]
+    private bool _podeAvancarPagina;
+
+    [ObservableProperty]
+    private bool _temPaginacao;
+
     [ObservableProperty]
     private bool _temProdutos;
 
@@ -81,6 +102,9 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
 
     [ObservableProperty]
     private string _formValor = string.Empty;
+
+    [ObservableProperty]
+    private int _formEstoque = 10;
 
     [ObservableProperty]
     private string? _formMensagemErro;
@@ -120,10 +144,10 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
     {
         var produtosDb = await _produtoService.ObterTodosAsync(TermoBusca, apenasAtivos: true);
 
-        Produtos.Clear();
+        _todosProdutosFiltrados.Clear();
         foreach (var p in produtosDb)
         {
-            Produtos.Add(new ProdutoCardItem
+            _todosProdutosFiltrados.Add(new ProdutoCardItem
             {
                 Id = p.Id,
                 Descricao = p.Descricao,
@@ -133,10 +157,64 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
             });
         }
 
-        TotalProdutos = Produtos.Count;
+        TotalProdutos = _todosProdutosFiltrados.Count;
         TotalProdutosTexto = TotalProdutos == 1 ? "1 produto" : $"{TotalProdutos} produtos";
-        TemProdutos = TotalProdutos > 0;
-        SemProdutos = TotalProdutos == 0;
+        AtualizarPaginaProdutos(resetPagina: true);
+    }
+
+    private void AtualizarPaginaProdutos(bool resetPagina = false)
+    {
+        if (resetPagina) PaginaAtual = 1;
+
+        var total = _todosProdutosFiltrados.Count;
+        TotalPaginas = total > 0 ? (int)Math.Ceiling((double)total / ItensPorPagina) : 1;
+
+        if (PaginaAtual > TotalPaginas) PaginaAtual = TotalPaginas;
+        if (PaginaAtual < 1) PaginaAtual = 1;
+
+        var skip = (PaginaAtual - 1) * ItensPorPagina;
+        Produtos.Clear();
+        foreach (var item in _todosProdutosFiltrados.Skip(skip).Take(ItensPorPagina))
+        {
+            Produtos.Add(item);
+        }
+
+        PodeVoltarPagina = PaginaAtual > 1;
+        PodeAvancarPagina = PaginaAtual < TotalPaginas;
+        TemPaginacao = total > 0;
+        TemProdutos = total > 0;
+        SemProdutos = total == 0;
+
+        if (total == 0)
+        {
+            TextoPaginacao = "Nenhum produto encontrado";
+        }
+        else
+        {
+            var inicio = skip + 1;
+            var fim = Math.Min(skip + ItensPorPagina, total);
+            TextoPaginacao = $"Mostrando {inicio}-{fim} de {total} (Página {PaginaAtual} de {TotalPaginas})";
+        }
+    }
+
+    [RelayCommand]
+    public void ProximaPagina()
+    {
+        if (PodeAvancarPagina)
+        {
+            PaginaAtual++;
+            AtualizarPaginaProdutos();
+        }
+    }
+
+    [RelayCommand]
+    public void PaginaAnterior()
+    {
+        if (PodeVoltarPagina)
+        {
+            PaginaAtual--;
+            AtualizarPaginaProdutos();
+        }
     }
 
     [RelayCommand]
@@ -161,6 +239,7 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
         FormProdutoId = item.Id;
         FormDescricao = item.Descricao;
         FormValor = item.Valor.ToString("N2", PtBrCulture);
+        FormEstoque = item.Estoque;
         FormMensagemErro = null;
         IsModalProdutoAberto = true;
     }
@@ -198,6 +277,7 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
                     Id = FormProdutoId,
                     Descricao = FormDescricao.Trim(),
                     Valor = valorDecimal,
+                    Estoque = FormEstoque,
                     Ativo = true
                 };
 
@@ -210,7 +290,7 @@ public partial class ProdutosViewModel : ObservableObject, IModalHost
                     Descricao = FormDescricao.Trim(),
                     Valor = valorDecimal,
                     Ativo = true,
-                    Estoque = 10
+                    Estoque = FormEstoque > 0 ? FormEstoque : 10
                 };
 
                 await _produtoService.AdicionarAsync(produto);

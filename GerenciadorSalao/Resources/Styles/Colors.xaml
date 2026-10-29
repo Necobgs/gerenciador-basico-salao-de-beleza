@@ -20,6 +20,9 @@
     <Color x:Key="ColorWarningSubtle">#FFF3E0</Color>
     <Color x:Key="ColorInfo">#0288D1</Color>
     <Color x:Key="ColorInfoSubtle">#E1F5FE</Color>
+    <Color x:Key="ColorDanger">#D32F2F</Color>
+    <Color x:Key="ColorDangerHover">#B71C1C</Color>
+    <Color x:Key="ColorDangerPressed">#8E0000</Color>
 
     <!-- Pincéis (Brushes) para Uso Direto em Controles e Telas -->
     <SolidColorBrush x:Key="BrushPrimary" Color="{StaticResource ColorPrimary}" />
@@ -33,12 +36,15 @@
     <SolidColorBrush x:Key="BrushTextPrimary" Color="{StaticResource ColorTextPrimary}" />
     <SolidColorBrush x:Key="BrushTextSecondary" Color="{StaticResource ColorTextSecondary}" />
 
-    <!-- Pincéis de Status / Badges -->
+    <!-- Pincéis de Status / Badges / Ações -->
     <SolidColorBrush x:Key="BrushSuccess" Color="{StaticResource ColorSuccess}" />
     <SolidColorBrush x:Key="BrushSuccessSubtle" Color="{StaticResource ColorSuccessSubtle}" />
     <SolidColorBrush x:Key="BrushWarning" Color="{StaticResource ColorWarning}" />
     <SolidColorBrush x:Key="BrushWarningSubtle" Color="{StaticResource ColorWarningSubtle}" />
     <SolidColorBrush x:Key="BrushInfo" Color="{StaticResource ColorInfo}" />
     <SolidColorBrush x:Key="BrushInfoSubtle" Color="{StaticResource ColorInfoSubtle}" />
+    <SolidColorBrush x:Key="BrushDanger" Color="{StaticResource ColorDanger}" />
+    <SolidColorBrush x:Key="BrushDangerHover" Color="{StaticResource ColorDangerHover}" />
+    <SolidColorBrush x:Key="BrushDangerPressed" Color="{StaticResource ColorDangerPressed}" />
 
 </ResourceDictionary>

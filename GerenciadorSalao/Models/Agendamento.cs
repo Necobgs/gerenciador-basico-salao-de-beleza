@@ -4,8 +4,11 @@ public class Agendamento
 {
     public int Id { get; set; }
 
-    public int ClienteId { get; set; }
-    public Cliente Cliente { get; set; } = null!;
+    public int? ClienteId { get; set; }
+    public Cliente? Cliente { get; set; }
+
+    public string? ClienteNaoEncontradoNome { get; set; }
+    public string? ServicoNaoEncontradoNome { get; set; }
 
     public DateTime DataHora { get; set; }
 

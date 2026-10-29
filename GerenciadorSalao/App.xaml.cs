@@ -14,8 +14,16 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
+    [System.Runtime.InteropServices.DllImport("shell32.dll", SetLastError = true)]
+    private static extern void SetCurrentProcessExplicitAppUserModelID([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string AppID);
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        try
+        {
+            SetCurrentProcessExplicitAppUserModelID("KarlaBorges.GerenciadorSalao");
+        }
+        catch { }
         AppDomain.CurrentDomain.UnhandledException += (s, args) =>
         {
             try

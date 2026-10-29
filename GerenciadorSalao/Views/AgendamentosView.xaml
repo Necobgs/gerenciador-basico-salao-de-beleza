@@ -661,13 +661,13 @@
                                              GroupName="FiltroAgendaGroup"
                                              IsChecked="{Binding IsFiltroTodos, Mode=TwoWay}"
                                              Style="{StaticResource SegmentedTabRadioButtonStyle}"/>
-                                <RadioButton Content="Agendados" 
+                                <RadioButton Content="Pendentes" 
                                              GroupName="FiltroAgendaGroup"
-                                             IsChecked="{Binding IsFiltroAgendados, Mode=TwoWay}"
+                                             IsChecked="{Binding IsFiltroPendentes, Mode=TwoWay}"
                                              Style="{StaticResource SegmentedTabRadioButtonStyle}"/>
-                                <RadioButton Content="Em atendimento" 
+                                <RadioButton Content="Finalizados" 
                                              GroupName="FiltroAgendaGroup"
-                                             IsChecked="{Binding IsFiltroEmAtendimento, Mode=TwoWay}"
+                                             IsChecked="{Binding IsFiltroFinalizados, Mode=TwoWay}"
                                              Style="{StaticResource SegmentedTabRadioButtonStyle}"/>
                             </StackPanel>
                         </Border>
@@ -850,19 +850,19 @@
             <Border Background="#55000000" Cursor="Hand" MouseLeftButtonDown="FecharModalNovoAgendamento_MouseLeftButtonDown"/>
 
             <!-- Cartão Centrado do Modal -->
-            <Border Width="580"
-                    Height="715"
+            <Border Width="560"
+                    MaxHeight="510"
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center"
                     Background="{StaticResource BrushSurface}"
                     CornerRadius="16"
-                    Padding="26,20"
+                    Padding="24,16"
                     BorderBrush="{StaticResource BrushBorder}"
                     BorderThickness="1"
                     SnapsToDevicePixels="True">
                 <Border.RenderTransform>
                     <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
-                                        Y="-26"/>
+                                        Y="0"/>
                 </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="28" Direction="270" ShadowDepth="8" Opacity="0.22" Color="#302B2A"/>
@@ -901,7 +901,7 @@
                     </Grid>
 
                     <!-- Área de Conteúdo com Layout Fixo e Estável (SEM SCROLL EXTERNO) -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,8,0" Margin="0,0,0,6">
                         <StackPanel>
                             <!-- 1. Campo Cliente Pesquisável (Aumentado: Nome, Apelido e Telefone) -->
                             <TextBlock Text="Cliente" 
@@ -1411,7 +1411,8 @@
 
                             <!-- Lista de Serviços no Agendamento em Espaço Fixo Reservado (ÚNICA ÁREA COM SCROLL) -->
                             <TextBlock Text="Serviços do agendamento" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" Margin="0,0,0,5"/>
-                            <Border Height="175"
+                            <Border MinHeight="70"
+                                    MaxHeight="120"
                                     Background="#FAF8F7" 
                                     BorderBrush="#EAE3E1" 
                                     BorderThickness="1" 
@@ -1420,7 +1421,7 @@
                                     Margin="0,0,0,10">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto" 
                                               HorizontalScrollBarVisibility="Disabled">
-                                    <Grid MinHeight="155">
+                                    <Grid MinHeight="60">
                                         <ItemsControl ItemsSource="{Binding ServicosSelecionadosParaNovo}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
@@ -1639,7 +1640,7 @@
 
                     <!-- Mensagem Informativa de Exclusão -->
                     <TextBlock Grid.Row="1" 
-                               Text="{Binding AgendamentoParaExcluir.NomeCliente, StringFormat='Tem certeza que deseja cancelar o agendamento de {0}? Se houver uma comanda aberta vinculada a ele, ela também será cancelada.'}" 
+                               Text="{Binding AgendamentoParaExcluir.NomeCliente, StringFormat='Tem certeza que deseja cancelar o agendamento de {0}? A comanda vinculada a ele também será excluída.'}" 
                                FontSize="13" 
                                Foreground="{StaticResource BrushTextSecondary}" 
                                TextWrapping="Wrap" 
@@ -1660,19 +1661,10 @@
                                 Margin="0,0,10,0"/>
 
                         <Button Grid.Column="1"
+                                Content="Confirmar cancelamento"
                                 Command="{Binding ConfirmarExclusaoCommand}"
-                                Background="#D32F2F"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Padding="20,10"
-                                Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="8"/>
-                                </Style>
-                            </Button.Resources>
-                            <TextBlock Text="Confirmar cancelamento" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </Button>
+                                Style="{StaticResource DangerActionButtonStyle}"
+                                Padding="20,10"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -1686,13 +1678,13 @@
             <Border Background="White" 
                     CornerRadius="16" 
                     Width="620" 
-                    MaxHeight="720"
-                    Padding="28,24" 
+                    MaxHeight="520"
+                    Padding="24,18"
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center">
                 <Border.RenderTransform>
                     <TranslateTransform X="{Binding DataContext.IsSidebarOpen, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SidebarToModalOffsetXConverter}}"
-                                        Y="-20"/>
+                                        Y="0"/>
                 </Border.RenderTransform>
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="30" Direction="270" ShadowDepth="8" Opacity="0.22" Color="#201C1B"/>

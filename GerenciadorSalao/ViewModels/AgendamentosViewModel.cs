@@ -20,11 +20,15 @@ public class AgendamentoListItemViewModel
     public string ServicosTexto { get; set; } = string.Empty;
     public decimal ValorTotal { get; set; }
     public string ValorTotalTexto { get; set; } = string.Empty;
-    public string StatusTexto { get; set; } = "Agendado";
+    public string StatusTexto { get; set; } = "Pendente";
     public string StatusBg { get; set; } = "#FEE9E6";
     public string StatusFg { get; set; } = "#885B53";
     public int? ComandaId { get; set; }
     public bool IsSincronizadoICloud { get; set; }
+    public bool IsClienteNaoEncontrado { get; set; }
+    public string AvisoClienteNaoEncontrado { get; set; } = "Cliente não encontrado";
+    public bool IsServicoNaoEncontrado { get; set; }
+    public string AvisoServicoNaoEncontrado { get; set; } = "Serviço não encontrado";
 }
 
 public partial class AgendamentosViewModel : ObservableObject, IModalHost
@@ -33,7 +37,7 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     private readonly IClienteService _clienteService;
     private readonly IServicoService _servicoService;
     private readonly IComandaService _comandaService;
-    private readonly IICloudSyncService _iCloudSyncService;
+    private readonly IICloudSyncService _iCloudSyncService = null!;
 
     public bool IsModalAberto => IsModalNovoAgendamentoAberto || IsModalExcluirAberto || IsModalICloudAberto;
 
@@ -93,6 +97,52 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
     public ObservableCollection<AgendamentoListItemViewModel> TodosAgendamentos { get; } = new();
     public ObservableCollection<AgendamentoListItemViewModel> AgendamentosFiltrados { get; } = new();
+
+
+
+    private readonly List<AgendamentoListItemViewModel> _todosAgendamentosFiltrados = new();
+
+    private const int ItensPorPagina = 20;
+
+
+
+    [ObservableProperty]
+
+    private int _paginaAtual = 1;
+
+
+
+    [ObservableProperty]
+
+    private int _totalPaginas = 1;
+
+
+
+    [ObservableProperty]
+
+    private string _textoPaginacao = string.Empty;
+
+
+
+    [ObservableProperty]
+
+    private bool _podeVoltarPagina;
+
+
+
+    [ObservableProperty]
+
+    private bool _podeAvancarPagina;
+
+
+
+    [ObservableProperty]
+
+    private bool _temPaginacao;
+
+
+
+    public bool TemAgendamentos => AgendamentosFiltrados.Count > 0;
 
     public string DataSelecionadaFormatada => DataSelecionada.ToString("dd/MM/yyyy");
 
@@ -280,15 +330,18 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         _comandaService = comandaService;
         _iCloudSyncService = iCloudSyncService;
 
-        _iCloudSyncService.EstadoMudou += (s, estado) =>
+        if (_iCloudSyncService != null)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            _iCloudSyncService.EstadoMudou += (s, estado) =>
             {
-                ICloudEstado = estado;
-                _ = AtualizarStatusICloudAsync();
-                if (estado == EstadoSincronizacao.Sincronizado) { _ = CarregarAgendamentosAsync(); }
-            });
-        };
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    ICloudEstado = estado;
+                    _ = AtualizarStatusICloudAsync();
+                    if (estado == EstadoSincronizacao.Sincronizado) { _ = CarregarAgendamentosAsync(); }
+                });
+            };
+        }
 
         MesVisualizado = new DateTime(DataSelecionada.Year, DataSelecionada.Month, 1);
         AtualizarDiasCalendario();
@@ -318,21 +371,26 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
         set { if (value) DefinirFiltro("Todos"); }
     }
 
-    public bool IsFiltroAgendados
+    public bool IsFiltroPendentes
     {
-        get => FiltroSelecionado == "Agendados";
-        set { if (value) DefinirFiltro("Agendados"); }
+        get => FiltroSelecionado == "Pendentes" || FiltroSelecionado == "Pendente" || FiltroSelecionado == "Em atendimento";
+        set { if (value) DefinirFiltro("Pendentes"); }
     }
 
-    public bool IsFiltroEmAtendimento
+    public bool IsFiltroFinalizados
     {
-        get => FiltroSelecionado == "Em atendimento";
-        set { if (value) DefinirFiltro("Em atendimento"); }
+        get => FiltroSelecionado == "Finalizados" || FiltroSelecionado == "Finalizado";
+        set { if (value) DefinirFiltro("Finalizados"); }
     }
+
+    public bool IsFiltroAgendados => IsFiltroPendentes;
+    public bool IsFiltroEmAtendimento => IsFiltroPendentes;
 
     partial void OnFiltroSelecionadoChanged(string value)
     {
         OnPropertyChanged(nameof(IsFiltroTodos));
+        OnPropertyChanged(nameof(IsFiltroPendentes));
+        OnPropertyChanged(nameof(IsFiltroFinalizados));
         OnPropertyChanged(nameof(IsFiltroAgendados));
         OnPropertyChanged(nameof(IsFiltroEmAtendimento));
         AplicarFiltro();
@@ -354,9 +412,18 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
             foreach (var ag in agendamentosDb)
             {
                 if (ag.Status == StatusAgendamento.Cancelado) continue;
-                var nomeCli = ag.Cliente?.NomeExibicao ?? "Cliente";
+                bool isClienteNaoEncontrado = !ag.ClienteId.HasValue || !string.IsNullOrWhiteSpace(ag.ClienteNaoEncontradoNome);
+                var nomeCli = ag.Cliente != null 
+                    ? ag.Cliente.NomeExibicao 
+                    : (!string.IsNullOrWhiteSpace(ag.ClienteNaoEncontradoNome) ? ag.ClienteNaoEncontradoNome : "Cliente não identificado");
+                bool isServicoNaoEncontrado = !string.IsNullOrWhiteSpace(ag.ServicoNaoEncontradoNome);
                 var servicos = string.Join(" + ", ag.AgendamentoServicos.Select(s => s.Servico?.NomeExibicao ?? s.Servico?.Descricao ?? "Serviço"));
-                if (string.IsNullOrWhiteSpace(servicos)) servicos = "Atendimento geral";
+                if (string.IsNullOrWhiteSpace(servicos))
+                {
+                    servicos = !string.IsNullOrWhiteSpace(ag.ServicoNaoEncontradoNome)
+                        ? ag.ServicoNaoEncontradoNome
+                        : "Serviço não informado";
+                }
 
                 var valorTotal = ag.Comanda != null && ag.Comanda.ValorTotal > 0 
                     ? ag.Comanda.ValorTotal 
@@ -366,23 +433,17 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                 string statusBg;
                 string statusFg;
 
-                if (ag.Comanda != null && ag.Comanda.Status == StatusComanda.Aberta)
+                if (ag.Status == StatusAgendamento.Finalizado || ag.Status == StatusAgendamento.Concluido || (ag.Comanda != null && ag.Comanda.Status == StatusComanda.Finalizada))
                 {
-                    statusTexto = "Em atendimento";
-                    statusBg = "#FFF3E0";
-                    statusFg = "#ED6C02";
-                }
-                else if (ag.Status == StatusAgendamento.Concluido)
-                {
-                    statusTexto = "Concluído";
+                    statusTexto = "Finalizado";
                     statusBg = "#E8F5E9";
                     statusFg = "#2E7D32";
                 }
                 else
                 {
-                    statusTexto = "Agendada";
-                    statusBg = "#FEE9E6";
-                    statusFg = "#885B53";
+                    statusTexto = "Pendente";
+                    statusBg = "#FFF3E0";
+                    statusFg = "#ED6C02";
                 }
 
                 TodosAgendamentos.Add(new AgendamentoListItemViewModel
@@ -398,8 +459,12 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                     StatusTexto = statusTexto,
                     StatusBg = statusBg,
                     StatusFg = statusFg,
-                    ComandaId = ag.ComandaId,
-                    IsSincronizadoICloud = ag.SincronizadoComICloud || !string.IsNullOrEmpty(ag.ICloudEventId)
+                    ComandaId = ag.ComandaId ?? ag.Comanda?.Id,
+                    IsSincronizadoICloud = ag.SincronizadoComICloud || !string.IsNullOrEmpty(ag.ICloudEventId),
+                    IsClienteNaoEncontrado = isClienteNaoEncontrado,
+                    AvisoClienteNaoEncontrado = "Cliente não encontrado",
+                    IsServicoNaoEncontrado = isServicoNaoEncontrado,
+                    AvisoServicoNaoEncontrado = "Serviço não encontrado"
                 });
             }
 
@@ -417,26 +482,79 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
     private void AplicarFiltro()
     {
-        AgendamentosFiltrados.Clear();
-
         IEnumerable<AgendamentoListItemViewModel> filtrados = TodosAgendamentos;
 
-        if (FiltroSelecionado == "Agendados")
+        if (FiltroSelecionado == "Pendentes" || FiltroSelecionado == "Pendente" || FiltroSelecionado == "Agendados" || FiltroSelecionado == "Em atendimento")
         {
-            filtrados = TodosAgendamentos.Where(a => a.StatusTexto.StartsWith("Agendad", StringComparison.OrdinalIgnoreCase));
+            filtrados = TodosAgendamentos.Where(a => a.StatusTexto.Equals("Pendente", StringComparison.OrdinalIgnoreCase));
         }
-        else if (FiltroSelecionado == "Em atendimento")
+        else if (FiltroSelecionado == "Finalizados" || FiltroSelecionado == "Finalizado" || FiltroSelecionado == "Concluídos" || FiltroSelecionado == "Concluído")
         {
-            filtrados = TodosAgendamentos.Where(a => a.StatusTexto.Equals("Em atendimento", StringComparison.OrdinalIgnoreCase));
+            filtrados = TodosAgendamentos.Where(a => a.StatusTexto.Equals("Finalizado", StringComparison.OrdinalIgnoreCase));
         }
 
-        foreach (var item in filtrados)
+        _todosAgendamentosFiltrados.Clear();
+        _todosAgendamentosFiltrados.AddRange(filtrados);
+
+        var total = _todosAgendamentosFiltrados.Count;
+        TotalAgendamentosTexto = total == 1 ? "1 agendamento" : $"{total} agendamentos";
+
+        AtualizarPaginaAgendamentos(resetPagina: true);
+    }
+
+    private void AtualizarPaginaAgendamentos(bool resetPagina = false)
+    {
+        if (resetPagina) PaginaAtual = 1;
+
+        var total = _todosAgendamentosFiltrados.Count;
+        TotalPaginas = total > 0 ? (int)Math.Ceiling((double)total / ItensPorPagina) : 1;
+
+        if (PaginaAtual > TotalPaginas) PaginaAtual = TotalPaginas;
+        if (PaginaAtual < 1) PaginaAtual = 1;
+
+        var skip = (PaginaAtual - 1) * ItensPorPagina;
+        AgendamentosFiltrados.Clear();
+        foreach (var item in _todosAgendamentosFiltrados.Skip(skip).Take(ItensPorPagina))
         {
             AgendamentosFiltrados.Add(item);
         }
 
-        var total = AgendamentosFiltrados.Count;
-        TotalAgendamentosTexto = total == 1 ? "1 agendamento" : $"{total} agendamentos";
+        PodeVoltarPagina = total > 0 && PaginaAtual > 1;
+        PodeAvancarPagina = total > 0 && PaginaAtual < TotalPaginas;
+        TemPaginacao = total > 0;
+
+        if (total == 0)
+        {
+            TextoPaginacao = string.Empty;
+        }
+        else
+        {
+            var inicio = skip + 1;
+            var fim = Math.Min(skip + ItensPorPagina, total);
+            TextoPaginacao = $"Mostrando {inicio}-{fim} de {total} (Página {PaginaAtual} de {TotalPaginas})";
+        }
+
+        OnPropertyChanged(nameof(TemAgendamentos));
+    }
+
+    [RelayCommand]
+    public void ProximaPagina()
+    {
+        if (PodeAvancarPagina)
+        {
+            PaginaAtual++;
+            AtualizarPaginaAgendamentos();
+        }
+    }
+
+    [RelayCommand]
+    public void PaginaAnterior()
+    {
+        if (PodeVoltarPagina)
+        {
+            PaginaAtual--;
+            AtualizarPaginaAgendamentos();
+        }
     }
 
     [RelayCommand]
@@ -514,6 +632,12 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     public void AbrirComanda(int agendamentoId)
     {
         var item = TodosAgendamentos.FirstOrDefault(a => a.Id == agendamentoId);
+        if (item != null && item.IsClienteNaoEncontrado)
+        {
+            _ = AbrirModalEditarAgendamentoAsync(agendamentoId);
+            MensagemErroModal = "Por favor, selecione ou cadastre o cliente antes de abrir a comanda.";
+            return;
+        }
         if (item?.ComandaId != null && item.ComandaId > 0)
         {
             NavigationRequested?.Invoke("Comandas", item.ComandaId.Value);
@@ -556,6 +680,7 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
     {
         try
         {
+            if (_iCloudSyncService == null) return;
             var config = await _iCloudSyncService.ObterConfiguracaoAsync();
             ICloudEstado = _iCloudSyncService.EstadoAtual;
             ICloudOperacoesPendentesCount = config.OperacoesPendentesCount;
@@ -824,7 +949,7 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                 (c.Apelido != null && c.Apelido.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
                 (c.Telefone != null && c.Telefone.Contains(termo, StringComparison.OrdinalIgnoreCase)));
 
-        foreach (var cli in lista.Take(100))
+        foreach (var cli in lista.Take(20))
         {
             ClientesDisponiveisFiltrados.Add(cli);
         }
@@ -863,7 +988,7 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
                 (s.Descricao != null && s.Descricao.Contains(termo, StringComparison.OrdinalIgnoreCase)) ||
                 (s.Especificacao != null && s.Especificacao.Contains(termo, StringComparison.OrdinalIgnoreCase)));
 
-        foreach (var s in lista.Take(100))
+        foreach (var s in lista.Take(20))
         {
             ServicosDisponiveisFiltrados.Add(s);
         }
@@ -926,8 +1051,25 @@ public partial class AgendamentosViewModel : ObservableObject, IModalHost
 
             await CarregarListasFormularioAsync();
 
-            ClienteSelecionado = ClientesDisponiveis.FirstOrDefault(c => c.Id == agendamentoDb.ClienteId);
-            BuscaClienteTexto = ClienteSelecionado?.NomeExibicao ?? string.Empty;
+            if (agendamentoDb.ClienteId.HasValue)
+            {
+                ClienteSelecionado = ClientesDisponiveis.FirstOrDefault(c => c.Id == agendamentoDb.ClienteId.Value);
+                BuscaClienteTexto = ClienteSelecionado?.NomeExibicao ?? string.Empty;
+    
+            }
+            else
+            {
+                ClienteSelecionado = null;
+                BuscaClienteTexto = agendamentoDb.ClienteNaoEncontradoNome ?? string.Empty;
+                MensagemErroModal = "Atenção: Cliente não cadastrado no salão. Selecione um cliente para vincular.";
+            }
+
+            if (!string.IsNullOrWhiteSpace(agendamentoDb.ServicoNaoEncontradoNome))
+            {
+                var avisoSvc = $"Serviço '{agendamentoDb.ServicoNaoEncontradoNome}' não foi localizado no cadastro. Adicione os serviços desejados.";
+                MensagemErroModal = MensagemErroModal != null ? $"{MensagemErroModal}\n{avisoSvc}" : avisoSvc;
+            }
+
             IsClientePopupOpen = false;
 
             BuscaServicoTexto = string.Empty;

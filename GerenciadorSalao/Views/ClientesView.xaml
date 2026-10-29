@@ -593,15 +593,15 @@
                     </Grid>
 
                     <!-- Lista de Visitas / Comandas -->
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="320">
-                        <StackPanel>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" MaxHeight="320" Padding="0,0,14,0">
+                        <StackPanel Margin="0,0,2,0">
                             <!-- Comandas Existentes -->
                             <ItemsControl ItemsSource="{Binding HistoricoComandas}" Visibility="{Binding TemHistoricoComandas, Converter={StaticResource BoolToVis}}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="{StaticResource BrushBorder}" 
                                                 BorderThickness="0,0,0,1" 
-                                                Padding="0,10">
+                                                Padding="4,10,8,10">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>

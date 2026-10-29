@@ -1,4 +1,4 @@
-using GerenciadorSalao.Data;
+﻿using GerenciadorSalao.Data;
 using GerenciadorSalao.Models;
 using GerenciadorSalao.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +8,12 @@ namespace GerenciadorSalao.Services;
 public class ComandaService : IComandaService
 {
     private readonly AppDbContext _context;
+    private readonly IICloudSyncService? _iCloudSyncService;
 
-    public ComandaService(AppDbContext context)
+    public ComandaService(AppDbContext context, IICloudSyncService? iCloudSyncService = null)
     {
         _context = context;
+        _iCloudSyncService = iCloudSyncService;
     }
 
     public async Task<List<Comanda>> ObterTodasAsync(StatusComanda? status = null)
@@ -67,7 +69,6 @@ public class ComandaService : IComandaService
         await _context.SaveChangesAsync();
         return comanda;
     }
-
     public async Task AdicionarItemServicoAsync(int comandaId, int servicoId, int quantidade = 1, decimal? precoUnitarioCustomizado = null)
     {
         var comanda = await ValidarComandaAbertaParaEdicaoAsync(comandaId);
@@ -211,10 +212,28 @@ public class ComandaService : IComandaService
         comanda.Status = StatusComanda.Finalizada;
         comanda.DataFechamento = DateTime.Now;
 
-        // Se estiver vinculada a um agendamento, marca o agendamento como Concluído
-        if (comanda.Agendamento != null)
+        // Se estiver vinculada a um agendamento, finaliza o agendamento também
+        var agendamento = comanda.Agendamento 
+            ?? await _context.Agendamentos.FirstOrDefaultAsync(a => a.ComandaId == comanda.Id || (comanda.AgendamentoId.HasValue && a.Id == comanda.AgendamentoId.Value));
+
+        if (agendamento != null)
         {
-            comanda.Agendamento.Status = StatusAgendamento.Concluido;
+            agendamento.Status = StatusAgendamento.Finalizado;
+            agendamento.VersaoLocal++;
+            agendamento.SincronizadoComICloud = false;
+
+            if (_iCloudSyncService != null && !string.IsNullOrEmpty(agendamento.ICloudEventId))
+            {
+                try
+                {
+                    await _iCloudSyncService.EnfileirarOperacaoAsync(agendamento.Id, agendamento.ICloudEventId, TipoOperacaoSincronizacao.Atualizar, agendamento);
+                    _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[ComandaService] Falha ao enfileirar atualização no iCloud: {ex.Message}");
+                }
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -230,15 +249,36 @@ public class ComandaService : IComandaService
         if (comanda == null)
             return;
 
-        // Se houver agendamento vinculado, desassocia para não violar integridade
-        if (comanda.Agendamento != null)
+        var agendamento = comanda.Agendamento 
+            ?? await _context.Agendamentos.FirstOrDefaultAsync(a => a.ComandaId == comanda.Id || (comanda.AgendamentoId.HasValue && a.Id == comanda.AgendamentoId.Value));
+
+        string? iCloudEventId = null;
+        int? agendamentoId = null;
+
+        // Se a comanda possuir um agendamento vinculado, exclui o agendamento também
+        if (agendamento != null)
         {
-            comanda.Agendamento.Comanda = null;
-            comanda.Agendamento.ComandaId = null;
+            iCloudEventId = agendamento.ICloudEventId;
+            agendamentoId = agendamento.Id;
+            _context.Agendamentos.Remove(agendamento);
         }
 
         _context.Comandas.Remove(comanda);
         await _context.SaveChangesAsync();
+
+        // Enfileira exclusão do agendamento para o Calendário do iPhone (iCloud)
+        if (_iCloudSyncService != null && agendamentoId.HasValue && !string.IsNullOrEmpty(iCloudEventId))
+        {
+            try
+            {
+                await _iCloudSyncService.EnfileirarOperacaoAsync(agendamentoId.Value, iCloudEventId, TipoOperacaoSincronizacao.Excluir, null);
+                _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ComandaService] Falha ao enfileirar exclusão no iCloud: {ex.Message}");
+            }
+        }
     }
 
     public async Task<Comanda> SalvarComandaCompletaAsync(
@@ -246,7 +286,8 @@ public class ComandaService : IComandaService
         int clienteId, 
         string? observacao, 
         List<ComandaItemDto> itens, 
-        bool finalizar = false)
+        bool finalizar = false,
+        int? agendamentoId = null)
     {
         if (clienteId <= 0)
             throw new ArgumentException("O cliente da comanda é obrigatório.", nameof(clienteId));
@@ -316,13 +357,45 @@ public class ComandaService : IComandaService
             comanda.Status = StatusComanda.Finalizada;
             comanda.DataFechamento = DateTime.Now;
 
-            if (comanda.Agendamento != null)
+            var agendamento = comanda.Agendamento 
+                ?? await _context.Agendamentos.FirstOrDefaultAsync(a => a.ComandaId == comanda.Id || (comanda.AgendamentoId.HasValue && a.Id == comanda.AgendamentoId.Value));
+
+            if (agendamento != null)
             {
-                comanda.Agendamento.Status = StatusAgendamento.Concluido;
+                agendamento.Status = StatusAgendamento.Finalizado;
+                agendamento.VersaoLocal++;
+                agendamento.SincronizadoComICloud = false;
+
+                if (_iCloudSyncService != null && !string.IsNullOrEmpty(agendamento.ICloudEventId))
+                {
+                    try
+                    {
+                        await _iCloudSyncService.EnfileirarOperacaoAsync(agendamento.Id, agendamento.ICloudEventId, TipoOperacaoSincronizacao.Atualizar, agendamento);
+                        _iCloudSyncService.DispararSincronizacaoEmSegundoPlano();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ComandaService] Falha ao enfileirar atualização no iCloud: {ex.Message}");
+                    }
+                }
             }
         }
 
         await _context.SaveChangesAsync();
+        if (agendamentoId.HasValue && agendamentoId.Value > 0)
+        {
+            var agendamentoVinculado = await _context.Agendamentos.FindAsync(agendamentoId.Value);
+            if (agendamentoVinculado != null && agendamentoVinculado.ComandaId != comanda.Id)
+            {
+                agendamentoVinculado.ComandaId = comanda.Id;
+                if (finalizar && agendamentoVinculado.Status != StatusAgendamento.Finalizado)
+                {
+                    agendamentoVinculado.Status = StatusAgendamento.Finalizado;
+                    agendamentoVinculado.VersaoLocal++;
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
         return comanda;
     }
 

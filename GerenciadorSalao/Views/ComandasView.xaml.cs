@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -216,6 +216,7 @@ public partial class ComandasView : UserControl
             if (!TxtBuscaCliente.IsKeyboardFocused)
             {
                 TxtBuscaCliente.Focus();
+                TxtBuscaCliente.SelectAll();
             }
 
             Dispatcher.BeginInvoke(new Action(() =>
@@ -247,6 +248,17 @@ public partial class ComandasView : UserControl
         else if (e.Key == Key.Down)
         {
             vm.IsClientePopupOpen = true;
+        }
+    }
+
+    private void TxtBuscaCliente_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ComandasViewModel vm)
+        {
+            if (vm.FormClienteSelecionado != null && vm.BuscaClienteTexto != vm.FormClienteSelecionado.NomeExibicao)
+            {
+                vm.RestaurarTextoClienteSelecionado();
+            }
         }
     }
 }

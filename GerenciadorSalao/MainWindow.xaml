@@ -7,11 +7,13 @@
         xmlns:vm="clr-namespace:GerenciadorSalao.ViewModels"
         xmlns:views="clr-namespace:GerenciadorSalao.Views"
         mc:Ignorable="d"
-        Title="Karla Borges - Centro de Estética" 
-        Height="750" Width="750"
-        MinHeight="600" MinWidth="720"
+        Title="Karla Borges - Centro de Estética"
+        Icon="pack://application:,,,/Resources/app.ico"
+        Height="680" Width="1200"
+        MinHeight="580" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
+        WindowState="Maximized"
         Background="{StaticResource BrushBackground}">
 
     <Window.Resources>
@@ -110,7 +112,7 @@
         </Grid.RowDefinitions>
 
         <!-- TitleBar do WPF-UI -->
-        <ui:TitleBar Grid.Row="0" Title="Karla Borges - Centro de Estética" />
+        <ui:TitleBar Grid.Row="0" Title="Karla Borges - Centro de Estética" Icon="{ui:ImageIcon 'pack://application:,,,/Resources/app.ico'}" />
 
         <!-- Layout Central: Sidebar (Esquerda) + Área de Conteúdo (Direita) -->
         <Grid Grid.Row="1">
@@ -136,14 +138,17 @@
                     <!-- Cabeçalho da Sidebar: Logo Karla Borges -->
                     <StackPanel Grid.Row="0" Margin="18,18,18,14">
                         <Image Source="/Resources/Images/logo.png" 
-                               Height="42" 
-                               HorizontalAlignment="Left" 
+                               HorizontalAlignment="Stretch" 
+                               Stretch="Uniform" 
+                               MaxHeight="80" 
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                         <TextBlock Text="CENTRO DE ESTÉTICA" 
                                    FontSize="9" 
                                    FontWeight="Bold" 
                                    Foreground="{StaticResource BrushSecondary}" 
-                                   Margin="2,4,0,0"/>
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   Margin="0,6,0,0"/>
                     </StackPanel>
 
                     <!-- Lista de Itens do Menu -->
@@ -278,7 +283,7 @@
 
                             <TextBlock Text="Meu salão" FontSize="13" Foreground="{StaticResource BrushTextSecondary}" VerticalAlignment="Center"/>
                             <TextBlock Text="  /  " FontSize="13" Foreground="{StaticResource BrushBorder}" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding CurrentPageTitle}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextPrimary}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
                         </StackPanel>
                     </Grid>
                 </Border>

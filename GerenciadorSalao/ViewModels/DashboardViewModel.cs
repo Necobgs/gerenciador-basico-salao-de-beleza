@@ -239,8 +239,8 @@ public partial class DashboardViewModel : ObservableObject
 
                 string statusFormatado = ag.Status switch
                 {
-                    StatusAgendamento.Pendente => "Agendado",
-                    StatusAgendamento.Concluido => "Concluído",
+                    StatusAgendamento.Pendente => "Pendente",
+                    StatusAgendamento.Finalizado => "Finalizado",
                     StatusAgendamento.Cancelado => "Cancelado",
                     _ => ag.Status.ToString()
                 };

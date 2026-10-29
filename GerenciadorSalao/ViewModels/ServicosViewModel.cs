@@ -54,6 +54,27 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
     [ObservableProperty]
     private string _totalServicosTexto = "0 serviços";
 
+    private readonly List<ServicoCardItem> _todosServicosFiltrados = new();
+    private const int ItensPorPagina = 20;
+
+    [ObservableProperty]
+    private int _paginaAtual = 1;
+
+    [ObservableProperty]
+    private int _totalPaginas = 1;
+
+    [ObservableProperty]
+    private string _textoPaginacao = string.Empty;
+
+    [ObservableProperty]
+    private bool _podeVoltarPagina;
+
+    [ObservableProperty]
+    private bool _podeAvancarPagina;
+
+    [ObservableProperty]
+    private bool _temPaginacao;
+
     [ObservableProperty]
     private bool _temServicos;
 
@@ -174,10 +195,10 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
     {
         var servicosDb = await _servicoService.ObterTodosAsync(TermoBusca, apenasAtivos: true);
 
-        Servicos.Clear();
+        _todosServicosFiltrados.Clear();
         foreach (var s in servicosDb)
         {
-            Servicos.Add(new ServicoCardItem
+            _todosServicosFiltrados.Add(new ServicoCardItem
             {
                 Id = s.Id,
                 Descricao = s.Descricao,
@@ -191,10 +212,64 @@ public partial class ServicosViewModel : ObservableObject, IModalHost
             });
         }
 
-        TotalServicos = Servicos.Count;
+        TotalServicos = _todosServicosFiltrados.Count;
         TotalServicosTexto = TotalServicos == 1 ? "1 serviço" : $"{TotalServicos} serviços";
-        TemServicos = TotalServicos > 0;
-        SemServicos = TotalServicos == 0;
+        AtualizarPaginaServicos(resetPagina: true);
+    }
+
+    private void AtualizarPaginaServicos(bool resetPagina = false)
+    {
+        if (resetPagina) PaginaAtual = 1;
+
+        var total = _todosServicosFiltrados.Count;
+        TotalPaginas = total > 0 ? (int)Math.Ceiling((double)total / ItensPorPagina) : 1;
+
+        if (PaginaAtual > TotalPaginas) PaginaAtual = TotalPaginas;
+        if (PaginaAtual < 1) PaginaAtual = 1;
+
+        var skip = (PaginaAtual - 1) * ItensPorPagina;
+        Servicos.Clear();
+        foreach (var item in _todosServicosFiltrados.Skip(skip).Take(ItensPorPagina))
+        {
+            Servicos.Add(item);
+        }
+
+        PodeVoltarPagina = PaginaAtual > 1;
+        PodeAvancarPagina = PaginaAtual < TotalPaginas;
+        TemPaginacao = total > 0;
+        TemServicos = total > 0;
+        SemServicos = total == 0;
+
+        if (total == 0)
+        {
+            TextoPaginacao = "Nenhum serviço encontrado";
+        }
+        else
+        {
+            var inicio = skip + 1;
+            var fim = Math.Min(skip + ItensPorPagina, total);
+            TextoPaginacao = $"Mostrando {inicio}-{fim} de {total} (Página {PaginaAtual} de {TotalPaginas})";
+        }
+    }
+
+    [RelayCommand]
+    public void ProximaPagina()
+    {
+        if (PodeAvancarPagina)
+        {
+            PaginaAtual++;
+            AtualizarPaginaServicos();
+        }
+    }
+
+    [RelayCommand]
+    public void PaginaAnterior()
+    {
+        if (PodeVoltarPagina)
+        {
+            PaginaAtual--;
+            AtualizarPaginaServicos();
+        }
     }
 
     [RelayCommand]

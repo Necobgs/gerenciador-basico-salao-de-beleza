@@ -15,6 +15,7 @@ public class SimulatedICloudCalendarProvider : IICloudCalendarProvider
 
     public bool IsOnline { get; set; } = true;
     public bool SimularFalhaAutenticacao { get; set; } = false;
+    public List<ICloudEventoRemoto>? EventosSobrescritos { get; set; }
 
     /// <summary>
     /// Quando verdadeiro, simula o cenário crítico: o servidor salva a alteração no disco,
@@ -61,6 +62,11 @@ public class SimulatedICloudCalendarProvider : IICloudCalendarProvider
 
         if (SimularFalhaAutenticacao)
             throw new HttpRequestException("HTTP 401 Unauthorized: Credenciais inválidas para o Apple ID.");
+
+        if (EventosSobrescritos != null)
+        {
+            return Task.FromResult(EventosSobrescritos.Select(ClonarEvento).ToList());
+        }
 
         lock (_eventosRemotos)
         {

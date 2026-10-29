@@ -23,3 +23,7 @@
 # Credenciais e tokens do Google
 google_credentials.json
 GoogleTokens/
+
+# Pastas de publicação e instalador
+publish/
+Output/

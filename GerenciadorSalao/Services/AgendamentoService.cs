@@ -134,6 +134,8 @@ public class AgendamentoService : IAgendamentoService
         _context.Comandas.Add(comanda);
 
         await _context.SaveChangesAsync();
+        agendamento.ComandaId = comanda.Id;
+        await _context.SaveChangesAsync();
 
         // Integração offline-first com o Calendário do iPhone (iCloud)
         if (_iCloudSyncService != null)
@@ -317,19 +319,15 @@ public class AgendamentoService : IAgendamentoService
 
         var iCloudEventId = agendamento.ICloudEventId;
 
-        // Se a comanda vinculada estiver aberta, remove a comanda também (hard delete).
-        // Se já estiver finalizada, desvincula o agendamento para permitir o hard delete do agendamento mantendo a comanda contábil.
-        if (agendamento.Comanda != null)
+        // Se houver comanda vinculada ao agendamento, exclui a comanda também conforme regra de negócio
+        var comanda = agendamento.Comanda 
+            ?? await _context.Comandas
+                .Include(c => c.Itens)
+                .FirstOrDefaultAsync(c => c.AgendamentoId == agendamento.Id || (agendamento.ComandaId.HasValue && c.Id == agendamento.ComandaId.Value));
+
+        if (comanda != null)
         {
-            if (agendamento.Comanda.Status == StatusComanda.Aberta)
-            {
-                _context.Comandas.Remove(agendamento.Comanda);
-            }
-            else
-            {
-                agendamento.Comanda.AgendamentoId = null;
-                agendamento.Comanda.Agendamento = null;
-            }
+            _context.Comandas.Remove(comanda);
         }
 
         // Hard Delete definitivo do Agendamento
